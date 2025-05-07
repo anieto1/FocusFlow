@@ -1,4 +1,4 @@
-package com.pm.common.model;
+package com.pm.userservice.model;
 
 
 import jakarta.persistence.*;
