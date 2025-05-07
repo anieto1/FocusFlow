@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db.nhoxsnjbasayqjgfpnjv.supabase.co:5432/postgres
+    username: postgres
+    password: F0cusing-0n-Stuff
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
