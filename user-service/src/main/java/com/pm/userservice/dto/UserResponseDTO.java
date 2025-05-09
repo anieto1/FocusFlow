@@ -6,6 +6,7 @@ public class UserResponseDTO {
     private String firstName;
     private String lastName;
     private String email;
+    private String password;
     private byte[] profilePicture;
 
     private String id;
@@ -40,6 +41,13 @@ public class UserResponseDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public byte[] getProfilePicture() {

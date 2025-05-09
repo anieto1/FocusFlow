@@ -15,6 +15,10 @@ public class UserRequestDTO {
     @Size(max=30, message = "Name must be less than 30 characters")
     private String lastName;
 
+    @NotBlank(message = "Password is required")
+    @Size(min=8, message = "Password must be at least 8 characters")
+    private String password;
+
     @NotBlank(message = "Email is required")
     @Email(message="Invalid Email address")
     private String email;
@@ -39,6 +43,12 @@ public class UserRequestDTO {
     }
     public void setEmail(String email) {
         this.email = email;
+    }
+    public String getPassword() {
+        return password;
+    }
+    public void setPassword(String password) {
+        this.password = password;
     }
     public void setProfilePicture(byte[] profilePicture) {
         this.profilePicture = profilePicture;

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -17,7 +18,6 @@ public class User {
 
     @NotNull
     private String firstName;
-
     @NotNull
     private String lastName;
 
@@ -26,8 +26,23 @@ public class User {
     @Column(unique = true)
     private String email;
 
+    @NotNull
+    @Column(unique = true)
+    private String password;
+
     @Lob
     private byte[] profilePicture;
+
+    @Column(name = "role", columnDefinition = "varchar(255) default 'USER'")
+    private String role;
+
+    @Column
+    private LocalDateTime createdAt;
+
+    @Column
+    private LocalDateTime updatedAt;
+
+
 
 
     public UUID getId() {
@@ -62,6 +77,14 @@ public class User {
         this.email = email;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public byte[] getProfilePicture() {
         return profilePicture;
     }
@@ -70,7 +93,28 @@ public class User {
         this.profilePicture = profilePicture;
     }
 
+    public String getRole() {
+        return role;
+    }
 
+    public void setRole(String role) {
+        this.role = role;
+    }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
 }
