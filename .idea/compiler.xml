@@ -12,12 +12,14 @@
         <module name="api-gateway" />
         <module name="chat-service" />
         <module name="user-service" />
+        <module name="task-service (1)" />
         <module name="session-service" />
         <module name="notification-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="task-service" target="21" />
+      <module name="task-service (1)" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -30,6 +32,7 @@
       <module name="notification-service" options="-parameters" />
       <module name="session-service" options="-parameters" />
       <module name="task-service" options="-parameters" />
+      <module name="task-service (1)" options="-parameters" />
       <module name="user-service" options="-parameters" />
     </option>
   </component>
