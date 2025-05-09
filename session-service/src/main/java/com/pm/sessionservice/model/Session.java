@@ -14,29 +14,79 @@ public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID sessionId;
-
-    @Column(name = "admin_id",nullable = false)
-    private UUID adminId;
-
-    @Column(name = "duration_minutes", nullable = false)
-    private int durationMinutes;
-
-    @ElementCollection
-    @CollectionTable(name = "session_users", joinColumns = @JoinColumn(name = "session_id"))
-    @Column(name = "user_id")
-    private List<UUID> memberIds = new ArrayList<>();
-
-    @Column(name = "scheduled_at",nullable = false )
-    private LocalDateTime scheduledAt;
-
-    @Column(name = "start_time", nullable = false)
-    private LocalDateTime startTime;
-
-    @Column(name = "end_time", nullable = false)
-    private LocalDateTime endTime;
+    
+    @Column(nullable = false)
+    private UUID ownerId;
+    
+    @Column(nullable = false)
+    private String title;
+    
+    @Column(nullable = false)
+    private LocalDateTime start_time;
+    
+    @Column(nullable = false)
+    private LocalDateTime end_time;
+    
+    @Column
+    private boolean is_active;
+    
+    @Column(nullable = false)
+    private LocalDateTime created_at;
 
 
+    public UUID getSessionId() {
+        return sessionId;
+    }
 
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
+    }
 
+    public UUID getOwnerId() {
+        return ownerId;
+    }
 
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public LocalDateTime getStart_time() {
+        return start_time;
+    }
+
+    public void setStart_time(LocalDateTime start_time) {
+        this.start_time = start_time;
+    }
+
+    public LocalDateTime getEnd_time() {
+        return end_time;
+    }
+
+    public void setEnd_time(LocalDateTime end_time) {
+        this.end_time = end_time;
+    }
+
+    public boolean isIs_active() {
+        return is_active;
+    }
+
+    public void setIs_active(boolean is_active) {
+        this.is_active = is_active;
+    }
+
+    public LocalDateTime getCreated_at() {
+        return created_at;
+    }
+
+    public void setCreated_at(LocalDateTime created_at) {
+        this.created_at = created_at;
+    }
 }
