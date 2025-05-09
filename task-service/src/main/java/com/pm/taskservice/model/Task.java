@@ -29,10 +29,10 @@ public class Task {
 
     @Column
     private String status;
-    
+
     @Column
     private LocalDateTime completed_at;
-    
+
     @Column
     private LocalDateTime created_at;
 
