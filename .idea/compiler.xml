@@ -10,7 +10,7 @@
         <module name="common" />
         <module name="analytics-service" />
         <module name="api-gateway" />
-        <module name="chat-service" />
+        <module name="task-service" />
         <module name="user-service" />
         <module name="task-service (1)" />
         <module name="session-service" />
@@ -18,7 +18,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="task-service" target="21" />
+      <module name="chat-service" target="21" />
       <module name="task-service (1)" target="21" />
     </bytecodeTargetLevel>
   </component>
