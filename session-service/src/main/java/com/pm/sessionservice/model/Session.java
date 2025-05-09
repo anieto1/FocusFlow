@@ -29,6 +29,12 @@ public class Session {
     @Column(name = "scheduled_at",nullable = false )
     private LocalDateTime scheduledAt;
 
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private LocalDateTime endTime;
+
 
 
 
