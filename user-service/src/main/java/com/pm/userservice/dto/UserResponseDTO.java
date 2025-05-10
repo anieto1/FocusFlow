@@ -7,7 +7,7 @@ public class UserResponseDTO {
     private String lastName;
     private String email;
     private String password;
-    private byte[] profilePicture;
+    private String profilePictureUrl;
 
     private String id;
 
@@ -50,12 +50,12 @@ public class UserResponseDTO {
         this.password = password;
     }
 
-    public byte[] getProfilePicture() {
-        return profilePicture;
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
     }
 
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 
 }

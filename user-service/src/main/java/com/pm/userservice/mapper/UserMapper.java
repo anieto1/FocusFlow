@@ -13,7 +13,7 @@ public class UserMapper {
         userResponseDTO.setFirstName(user.getFirstName());
         userResponseDTO.setLastName(user.getLastName());
         userResponseDTO.setEmail(user.getEmail());
-        userResponseDTO.setProfilePicture(user.getProfilePicture() != null && user.getProfilePicture().length > 0 ? user.getProfilePicture() : null);
+        userResponseDTO.setProfilePictureUrl(user.getProfilePictureUrl());
         return userResponseDTO;
         
         
@@ -27,7 +27,7 @@ public class UserMapper {
         user.setFirstName(userResponseDTO.getFirstName());
         user.setLastName(userResponseDTO.getLastName());
         user.setEmail(userResponseDTO.getEmail());
-        user.setProfilePicture(userResponseDTO.getProfilePicture());
+        user.setProfilePictureUrl(userResponseDTO.getProfilePictureUrl());
         return user;
     }
 }

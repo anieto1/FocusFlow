@@ -1,6 +1,5 @@
 package com.pm.userservice.dto;
 
-import jakarta.persistence.Lob;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -23,8 +22,8 @@ public class UserRequestDTO {
     @Email(message="Invalid Email address")
     private String email;
 
-    @Lob
-    private byte[] profilePicture;
+    @Size(max=2000000, message = "Profile picture must be less than 2MB")
+    private String profilePictureUrl;
 
     public String getFirstName() {
         return firstName;
@@ -50,11 +49,11 @@ public class UserRequestDTO {
     public void setPassword(String password) {
         this.password = password;
     }
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
-    public byte[] getProfilePicture() {
-        return profilePicture;
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
     }
 
 }

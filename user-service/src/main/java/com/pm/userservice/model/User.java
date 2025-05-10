@@ -13,8 +13,7 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @NotNull
     private String firstName;
@@ -30,13 +29,13 @@ public class User {
     @Column(unique = true)
     private String password;
 
-    @Lob
-    private byte[] profilePicture;
-
-    @Column(name = "role", columnDefinition = "varchar(255) default 'USER'")
-    private String role;
-
     @Column
+    private String profilePictureUrl;
+
+    @Column(name = "role", nullable = false)
+    private String role= "USER";
+
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @Column
@@ -85,16 +84,27 @@ public class User {
         this.password = password;
     }
 
-    public byte[] getProfilePicture() {
-        return profilePicture;
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
     }
 
-    public void setProfilePicture(byte[] profilePicture) {
-        this.profilePicture = profilePicture;
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     public String getRole() {
         return role;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void setRole(String role) {
@@ -105,16 +115,9 @@ public class User {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 
 }
