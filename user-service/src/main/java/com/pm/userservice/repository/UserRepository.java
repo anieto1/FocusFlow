@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     // Check if any user other than the one with given ID has this email
     boolean existsByEmailAndIdNot(String email, UUID id);
 
+
+
 }
