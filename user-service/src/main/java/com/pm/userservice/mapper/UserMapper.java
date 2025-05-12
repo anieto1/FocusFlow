@@ -1,5 +1,6 @@
 package com.pm.userservice.mapper;
 
+import com.pm.userservice.dto.UserRequestDTO;
 import com.pm.userservice.dto.UserResponseDTO;
 import com.pm.userservice.model.User;
 
@@ -13,21 +14,21 @@ public class UserMapper {
         userResponseDTO.setFirstName(user.getFirstName());
         userResponseDTO.setLastName(user.getLastName());
         userResponseDTO.setEmail(user.getEmail());
+        userResponseDTO.setPassword(user.getPassword());
         userResponseDTO.setProfilePictureUrl(user.getProfilePictureUrl());
         return userResponseDTO;
         
         
     }
 
-    public static User toModel(UserResponseDTO userResponseDTO) {
-        if(userResponseDTO == null) {return null;}
+    public static User toModel(UserRequestDTO userRequestDTO) {
+        if(userRequestDTO == null) {return null;}
 
         User user = new User();
-        user.setId(userResponseDTO.getId() != null ? java.util.UUID.fromString(userResponseDTO.getId()) : null);
-        user.setFirstName(userResponseDTO.getFirstName());
-        user.setLastName(userResponseDTO.getLastName());
-        user.setEmail(userResponseDTO.getEmail());
-        user.setProfilePictureUrl(userResponseDTO.getProfilePictureUrl());
+        user.setFirstName(userRequestDTO.getFirstName());
+        user.setLastName(userRequestDTO.getLastName());
+        user.setEmail(userRequestDTO.getEmail());
+        user.setProfilePictureUrl(userRequestDTO.getProfilePictureUrl());
         return user;
     }
 }
