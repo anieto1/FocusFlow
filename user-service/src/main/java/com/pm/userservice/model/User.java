@@ -20,6 +20,12 @@ public class User {
     @NotNull
     private String lastName;
 
+
+    //implement username in all user functions
+    @NotNull
+    @Column
+    private String username;
+
     @NotNull
     @Email
     @Column(unique = true)
@@ -79,6 +85,10 @@ public class User {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
+
+    public String getUsername() { return username; }
+
+    public void setUsername(String username) { this.username = username; }
 
     public String getEmail() {
         return email;
