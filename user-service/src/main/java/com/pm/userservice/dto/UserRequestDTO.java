@@ -22,6 +22,10 @@ public class UserRequestDTO {
     @Email(message="Invalid Email address")
     private String email;
 
+    @NotBlank(message = "Username is required")
+    @Size(max = 30, message = "Username must be under 30 characters")
+    private String username;
+
     @Size(max=2000000, message = "Profile picture must be less than 2MB")
     private String profilePictureUrl;
 
@@ -43,6 +47,8 @@ public class UserRequestDTO {
     public void setEmail(String email) {
         this.email = email;
     }
+    public String getUsername(){return username;}
+    public void setUsername(String username){this.username=username;}
     public String getPassword() {
         return password;
     }

@@ -21,7 +21,6 @@ public class User {
     private String lastName;
 
 
-    //implement username in all user functions
     @NotNull
     @Column
     private String username;

@@ -70,6 +70,7 @@ public class UserServiceImpl implements UserService {
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setEmail(dto.getEmail());
+        user.setUsername(dto.getUsername());
         user.setProfilePictureUrl(dto.getProfilePictureUrl());
         user.setUpdatedAt(LocalDateTime.now());
 
