@@ -14,13 +14,13 @@ public class UserRequestDTO {
     @Size(max=30, message = "Name must be less than 30 characters")
     private String lastName;
 
-    @NotBlank(message = "Password is required")
-    @Size(min=8, message = "Password must be at least 8 characters")
-    private String password;
-
     @NotBlank(message = "Email is required")
     @Email(message="Invalid Email address")
     private String email;
+
+    @NotBlank(message = "Password is required")
+    @Size(min=8, message = "Password must be at least 8 characters")
+    private String password;
 
     @NotBlank(message = "Username is required")
     @Size(max = 30, message = "Username must be under 30 characters")
