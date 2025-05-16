@@ -1,12 +1,16 @@
 package com.pm.taskservice.dto;
 
+import com.pm.taskservice.model.TaskStatus;
+
 public class TaskResponseDTO {
     private String taskId;
     private String userId;
     private String sessionId;
     private String title;
     private String description;
-    private String status;
+    private TaskStatus status;
+    private String createdAt;
+
 
     public String getTaskId() {
         return taskId;
@@ -48,12 +52,17 @@ public class TaskResponseDTO {
         this.description = description;
     }
 
-    public String getStatus() {
+    public TaskStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(TaskStatus status) {
         this.status = status;
     }
 
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {this.createdAt = createdAt;}
 }

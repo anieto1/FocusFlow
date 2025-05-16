@@ -1,10 +1,16 @@
 package com.pm.taskservice.dto;
 
+import com.pm.taskservice.model.TaskStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.UUID;
+
 public class TaskRequestDTO {
+
+    @NotNull
+    private UUID taskId;
 
     @NotNull
     private String sessionId;
@@ -21,11 +27,7 @@ public class TaskRequestDTO {
     private String description;
 
     @NotNull
-    private String taskStatus;
-
-    public TaskRequestDTO(String userId) {
-        this.userId = userId;
-    }
+    private TaskStatus taskStatus;
 
 
     public String getSessionId() {
@@ -34,6 +36,10 @@ public class TaskRequestDTO {
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
     }
+
+    public UUID getTaskId(){return  taskId;}
+
+    public void setTaskId(UUID taskId){this.taskId = taskId;}
 
     public String getUser_id() {
         return userId;
@@ -57,11 +63,11 @@ public class TaskRequestDTO {
         this.description = description;
     }
 
-    public String getTaskStatus() {
+    public TaskStatus getTaskStatus() {
         return taskStatus;
     }
 
-    public void setTaskStatus(String taskStatus) {
+    public void setTaskStatus(TaskStatus taskStatus) {
         this.taskStatus = taskStatus;
     }
 }

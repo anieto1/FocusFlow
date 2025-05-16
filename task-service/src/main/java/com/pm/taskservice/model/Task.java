@@ -28,7 +28,7 @@ public class Task {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TaskStatus taskStatus = TaskStatus.NOT_STARTED;
+    private TaskStatus status = TaskStatus.NOT_STARTED;
 
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;
@@ -79,12 +79,12 @@ public class Task {
         this.description = description;
     }
 
-    public String getStatus() {
-        return taskStatus.name();
+    public TaskStatus getStatus() {
+        return status;
     }
 
-    public void setStatus(String status) {
-        this.taskStatus = TaskStatus.valueOf(status);
+    public void setStatus(TaskStatus status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreatedAt() {
