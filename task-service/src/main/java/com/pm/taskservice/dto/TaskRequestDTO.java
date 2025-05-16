@@ -29,6 +29,8 @@ public class TaskRequestDTO {
     @NotNull
     private TaskStatus taskStatus;
 
+    private String createdAt;
+
 
     public String getSessionId() {
         return sessionId;}
@@ -69,5 +71,13 @@ public class TaskRequestDTO {
 
     public void setTaskStatus(TaskStatus taskStatus) {
         this.taskStatus = taskStatus;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
     }
 }

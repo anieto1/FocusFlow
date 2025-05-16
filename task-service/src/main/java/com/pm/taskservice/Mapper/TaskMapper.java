@@ -5,6 +5,7 @@ import com.pm.taskservice.dto.TaskResponseDTO;
 import com.pm.taskservice.model.Task;
 import com.pm.taskservice.model.TaskStatus;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class TaskMapper {
@@ -21,6 +22,7 @@ public class TaskMapper {
         taskResponseDTO.setTitle(task.getTitle());
         taskResponseDTO.setDescription(task.getDescription());
         taskResponseDTO.setStatus(task.getStatus());
+        taskResponseDTO.setCreatedAt(task.getCreatedAt() != null ? task.getCreatedAt().toString() : null);
 
         return taskResponseDTO;
     }
@@ -37,6 +39,7 @@ public class TaskMapper {
         task.setTitle(taskRequestDTO.getTitle());
         task.setDescription(taskRequestDTO.getDescription());
         task.setStatus(taskRequestDTO.getTaskStatus());
+        task.setCreatedAt(LocalDateTime.now());
 
         return task;
     }

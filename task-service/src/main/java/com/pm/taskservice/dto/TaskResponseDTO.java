@@ -64,5 +64,7 @@ public class TaskResponseDTO {
         return createdAt;
     }
 
-    public void setCreatedAt(String createdAt) {this.createdAt = createdAt;}
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
 }
