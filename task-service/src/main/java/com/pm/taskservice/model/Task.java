@@ -1,8 +1,8 @@
 package com.pm.taskservice.model;
 
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -12,52 +12,55 @@ public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID task_id;
+    private UUID taskId;
 
-    @Column(unique = true)
-    private UUID session_id;
+    @Column(unique = true, nullable = false)
+    private UUID sessionId;
 
-    @Column
-    private UUID user_id;
+    @Column(nullable = false)
+    private UUID userId;
 
-    @Column
     @NotNull
+    @Column(nullable = false)
     private String title;
 
-    @Column
     private String description;
 
-    @Column
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TaskStatus taskStatus = TaskStatus.NOT_STARTED;
 
-    @Column
-    private LocalDateTime completed_at;
+    @Column(updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
-    @Column
-    private LocalDateTime created_at;
-
-    public UUID getTask_id() {
-        return task_id;
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
     }
 
-    public void setTask_id(UUID task_id) {
-        this.task_id = task_id;
+    // Getters and Setters
+    public UUID getTaskId() {
+        return taskId;
     }
 
-    public UUID getSession_id() {
-        return session_id;
+    public void setTaskId(UUID taskId) {
+        this.taskId = taskId;
     }
 
-    public void setSession_id(UUID session_id) {
-        this.session_id = session_id;
+    public UUID getSessionId() {
+        return sessionId;
     }
 
-    public UUID getUser_id() {
-        return user_id;
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
     }
 
-    public void setUser_id(UUID user_id) {
-        this.user_id = user_id;
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
 
     public String getTitle() {
@@ -77,26 +80,18 @@ public class Task {
     }
 
     public String getStatus() {
-        return status;
+        return taskStatus.name();
     }
 
     public void setStatus(String status) {
-        this.status = status;
+        this.taskStatus = TaskStatus.valueOf(status);
     }
 
-    public LocalDateTime getCompleted_at() {
-        return completed_at;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCompleted_at(LocalDateTime completed_at) {
-        this.completed_at = completed_at;
-    }
-
-    public LocalDateTime getCreated_at() {
-        return created_at;
-    }
-
-    public void setCreated_at(LocalDateTime created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

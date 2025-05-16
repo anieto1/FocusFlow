@@ -1,0 +1,16 @@
+### GET request to example server
+POST http://localhost:8080/api/v1/users
+Content-Type: application/json
+Accept: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "password": "securePassword123",
+  "username": "johnny234",
+  "profilePictureUrl": "https://image-url.com/pic.jpg"
+}
+
+
+###
