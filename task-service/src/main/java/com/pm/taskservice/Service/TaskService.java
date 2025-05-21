@@ -39,6 +39,13 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    public TaskResponseDTO getTaskById(UUID taskId) {
+        logger.info("Fetching task with ID: {}", taskId);
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException("Task not found with ID: " + taskId));
+        return TaskMapper.toTaskResponseDTO(task);
+    }
+
     /**
      * Creates a new task based on the provided DTO.
      */
