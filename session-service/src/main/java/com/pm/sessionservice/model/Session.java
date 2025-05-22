@@ -18,6 +18,9 @@ public class Session {
     @Column(nullable = false)
     private UUID ownerId;
 
+    @Column(nullable = false)
+    private String ownerUserName;
+
     @ElementCollection(fetch = FetchType.EAGER)
     private List<UUID> participants = new ArrayList<>();
     
@@ -29,6 +32,9 @@ public class Session {
     
     @Column(nullable = false)
     private LocalDateTime end_time;
+
+    @Column(nullable = false)
+    private List<StringBuilder> messages = new ArrayList<>();
     
     @Column
     private boolean is_active;
@@ -52,6 +58,10 @@ public class Session {
     public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
     }
+
+    public String getOwnerUserName() {return ownerUserName;}
+
+    public void setOwnerUserName(String ownerUserName) {this.ownerUserName = ownerUserName;}
 
     public List<UUID> getParticipants() {return participants;}
 
@@ -80,6 +90,10 @@ public class Session {
     public void setEnd_time(LocalDateTime end_time) {
         this.end_time = end_time;
     }
+
+    public List<StringBuilder> getMessages() {return messages;}
+
+    public void setMessages(List<StringBuilder> messages) {this.messages = messages;}
 
     public boolean isIs_active() {
         return is_active;
