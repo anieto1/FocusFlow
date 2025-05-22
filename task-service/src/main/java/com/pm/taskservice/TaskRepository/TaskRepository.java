@@ -16,6 +16,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     List<Task> findByTitleContainingIgnoreCase(String title);
 
+    List<Task>findBySessionIdAndUserId(UUID sessionId, UUID userId);
+
+    List<Task> findByUserIdAndStatus(UUID userId, TaskStatus status);
+
     List<Task> findAllByUserId(UUID userId);
 
     List<Task> findAllBySessionId(UUID sessionId);

@@ -50,6 +50,23 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+//    public List<TaskResponseDTO> getTasksForUserInSession(UUID userId, UUID sessionId) {
+//        // Check if user is part of the session
+//        Session session = sessionRepository.findById(sessionId)
+//                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+//
+//        if (!session.getUserIds().contains(userId)) {
+//            throw new UnauthorizedAccessException("User is not part of this session");
+//        }
+//
+//        List<Task> tasks = taskRepository.findBySessionIdAndUserId(sessionId, userId);
+//        return tasks.stream()
+//                .map(TaskMapper::toTaskResponseDTO)
+//                .collect(Collectors.toList());
+//    }
+
+
+
 //    /**
 //     * Retrieves a task by session ID and exact title.
 //     */

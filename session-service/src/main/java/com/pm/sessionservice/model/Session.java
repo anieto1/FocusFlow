@@ -17,6 +17,9 @@ public class Session {
     
     @Column(nullable = false)
     private UUID ownerId;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<UUID> participants = new ArrayList<>();
     
     @Column(nullable = false)
     private String title;
@@ -49,6 +52,10 @@ public class Session {
     public void setOwnerId(UUID ownerId) {
         this.ownerId = ownerId;
     }
+
+    public List<UUID> getParticipants() {return participants;}
+
+    public void setParticipants(List<UUID> participants) {this.participants = participants;}
 
     public String getTitle() {
         return title;
