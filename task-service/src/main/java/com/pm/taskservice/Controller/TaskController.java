@@ -35,13 +35,15 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    @GetMapping("/{taskTitle}")
-    @Operation(summary = "Retrieve a task by Title", description = "Returns a specific task based on the provided title")
-    public ResponseEntity<TaskResponseDTO> getTaskByTitle(@PathVariable String taskTitle) {
-        logger.info("GET /api/v1/tasks/{}", taskTitle);
-        TaskResponseDTO task = taskService.getTaskByTitle(taskTitle);
-        return ResponseEntity.ok(task);
+    @GetMapping
+    @Operation(summary = "Retrieve tasks by title", description = "Returns a list of tasks matching the given title (partial, case-insensitive)")
+    public ResponseEntity<List<TaskResponseDTO>> getTasksByTitle(@RequestParam String title) {
+        logger.info("GET /api/v1/tasks?title={}", title);
+        List<TaskResponseDTO> tasks = taskService.getTasksByTitle(title); // Adjust service to return list
+        return ResponseEntity.ok(tasks);
     }
+
+
 
     @PostMapping
     @Operation(summary = "Create a new task", description = "Creates a new task with the provided details")

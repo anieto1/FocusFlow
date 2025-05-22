@@ -37,15 +37,17 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a task by a partial title match.
-     */
-    public TaskResponseDTO getTaskByTitle(String title) {
+    public List<TaskResponseDTO> getTasksByTitle(String title) {
+        logger.info("Searching tasks with title containing: {}", title);
         List<Task> tasks = taskRepository.findByTitleContainingIgnoreCase(title);
+
         if (tasks.isEmpty()) {
-            throw new TaskNotFoundException("Task not found with title: " + title);
+            throw new TaskNotFoundException("No tasks found with title: " + title);
         }
-        return TaskMapper.toTaskResponseDTO(tasks.get(0));
+
+        return tasks.stream()
+                .map(TaskMapper::toTaskResponseDTO)
+                .collect(Collectors.toList());
     }
 
 //    /**

@@ -10,8 +10,6 @@ import java.util.UUID;
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
 
-    Optional<Task> findBySessionIdAndTaskTitle(UUID sessionId, String title);
-
     void deleteAllBySessionId(UUID sessionId);
 
     long countByUserId(UUID userId);
