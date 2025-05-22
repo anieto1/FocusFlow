@@ -1,98 +1,73 @@
 package com.pm.sessionservice.DTO;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class SessionResponseDTO {
-    private String sessionId;
-    private String ownerId;
-    private String ownerUserName;
-    private String[] participants;
-    private String title;
-    private String start_time;
-    private String end_time;
-    private String[] messages;
-    private boolean is_active;
-    private String created_at;
 
+    private UUID sessionId;
+    private String ownerUsername;
+    private List<UUID> userIds;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private LocalDateTime scheduledTime;
+    private LocalDateTime createdAt;
 
-    public String getSessionId() {
+    // Getters and Setters
+    public UUID getSessionId() {
         return sessionId;
     }
 
-    public void setSessionId(String sessionId) {
+    public void setSessionId(UUID sessionId) {
         this.sessionId = sessionId;
     }
 
-    public String getOwnerId() {
-        return ownerId;
+    public String getOwnerUsername() {
+        return ownerUsername;
     }
 
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
     }
 
-    public String getOwnerUserName() {
-        return ownerUserName;
+    public List<UUID> getUserIds() {
+        return userIds;
     }
 
-    public void setOwnerUserName(String ownerUserName) {
-        this.ownerUserName = ownerUserName;
+    public void setUserIds(List<UUID> userIds) {
+        this.userIds = userIds;
     }
 
-    public String[] getParticipants() {
-        return participants;
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
 
-    public void setParticipants(String[] participants) {
-        this.participants = participants;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
     }
 
-    public String getTitle() {
-        return title;
+    public LocalDateTime getEndTime() {
+        return endTime;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 
-    public String getStart_time() {
-        return start_time;
+    public LocalDateTime getScheduledTime() {
+        return scheduledTime;
     }
 
-    public void setStart_time(String start_time) {
-        this.start_time = start_time;
+    public void setScheduledTime(LocalDateTime scheduledTime) {
+        this.scheduledTime = scheduledTime;
     }
 
-    public String getEnd_time() {
-        return end_time;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setEnd_time(String end_time) {
-        this.end_time = end_time;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
-
-    public String[] getMessages() {
-        return messages;
-    }
-
-    public void setMessages(String[] messages) {
-        this.messages = messages;
-    }
-
-    public boolean isIs_active() {
-        return is_active;
-    }
-
-    public void setIs_active(boolean is_active) {
-        this.is_active = is_active;
-    }
-
-    public String getCreated_at() {
-        return created_at;
-    }
-
-    public void setCreated_at(String created_at) {
-        this.created_at = created_at;
-    }
-
 }

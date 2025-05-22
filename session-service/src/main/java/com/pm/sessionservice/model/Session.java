@@ -12,37 +12,44 @@ import java.util.UUID;
 public class Session {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Column(name = "session_id", updatable = false, nullable = false)
     private UUID sessionId;
-    
-    @Column(nullable = false)
-    private UUID ownerId;
+
+    @Column(name = "owner_username", nullable = false)
+    private String ownerUsername;
+
+    @ElementCollection
+    @CollectionTable(
+            name = "session_users",
+            joinColumns = @JoinColumn(name = "session_id")
+    )
+    @Column(name = "user_id", nullable = false)
+    private List<UUID> userIds = new ArrayList<>();
+
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+
+    @Column(name = "scheduled_time")
+    private LocalDateTime scheduledTime;
+
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    private String ownerUserName;
+    @Enumerated(EnumType.STRING)
+    private SessionStatus status = SessionStatus.SCHEDULED;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    private List<UUID> participants = new ArrayList<>();
-    
-    @Column(nullable = false)
-    private String title;
-    
-    @Column(nullable = false)
-    private LocalDateTime start_time;
-    
-    @Column(nullable = false)
-    private LocalDateTime end_time;
+    // Automatically set createdAt on persist
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 
-    @Column(nullable = false)
-    private List<StringBuilder> messages = new ArrayList<>();
-    
-    @Column
-    private boolean is_active;
-    
-    @Column(nullable = false)
-    private LocalDateTime created_at;
-
-
+    // Getters and Setters
     public UUID getSessionId() {
         return sessionId;
     }
@@ -51,63 +58,51 @@ public class Session {
         this.sessionId = sessionId;
     }
 
-    public UUID getOwnerId() {
-        return ownerId;
+    public String getOwnerUsername() {
+        return ownerUsername;
     }
 
-    public void setOwnerId(UUID ownerId) {
-        this.ownerId = ownerId;
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
     }
 
-    public String getOwnerUserName() {return ownerUserName;}
-
-    public void setOwnerUserName(String ownerUserName) {this.ownerUserName = ownerUserName;}
-
-    public List<UUID> getParticipants() {return participants;}
-
-    public void setParticipants(List<UUID> participants) {this.participants = participants;}
-
-    public String getTitle() {
-        return title;
+    public List<UUID> getUserIds() {
+        return userIds;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setUserIds(List<UUID> userIds) {
+        this.userIds = userIds;
     }
 
-    public LocalDateTime getStart_time() {
-        return start_time;
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
 
-    public void setStart_time(LocalDateTime start_time) {
-        this.start_time = start_time;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
     }
 
-    public LocalDateTime getEnd_time() {
-        return end_time;
+    public LocalDateTime getEndTime() {
+        return endTime;
     }
 
-    public void setEnd_time(LocalDateTime end_time) {
-        this.end_time = end_time;
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 
-    public List<StringBuilder> getMessages() {return messages;}
-
-    public void setMessages(List<StringBuilder> messages) {this.messages = messages;}
-
-    public boolean isIs_active() {
-        return is_active;
+    public LocalDateTime getScheduledTime() {
+        return scheduledTime;
     }
 
-    public void setIs_active(boolean is_active) {
-        this.is_active = is_active;
+    public void setScheduledTime(LocalDateTime scheduledTime) {
+        this.scheduledTime = scheduledTime;
     }
 
-    public LocalDateTime getCreated_at() {
-        return created_at;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(LocalDateTime created_at) {
-        this.created_at = created_at;
-    }
+    public SessionStatus getStatus() { return status;}
+
+    public void setStatus(SessionStatus status) { this.status = status;}
 }
