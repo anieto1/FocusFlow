@@ -35,11 +35,11 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    @GetMapping("/{taskId}")
-    @Operation(summary = "Retrieve a task by ID", description = "Returns a specific task based on the provided taskId")
-    public ResponseEntity<TaskResponseDTO> getTaskById(@PathVariable UUID taskId) {
-        logger.info("GET /api/v1/tasks/{}", taskId);
-        TaskResponseDTO task = taskService.getTaskById(taskId);
+    @GetMapping("/{taskTitle}")
+    @Operation(summary = "Retrieve a task by Title", description = "Returns a specific task based on the provided title")
+    public ResponseEntity<TaskResponseDTO> getTaskByTitle(@PathVariable String taskTitle) {
+        logger.info("GET /api/v1/tasks/{}", taskTitle);
+        TaskResponseDTO task = taskService.getTaskByTitle(taskTitle);
         return ResponseEntity.ok(task);
     }
 

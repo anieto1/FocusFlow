@@ -10,11 +10,7 @@ import java.util.UUID;
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
 
-    Optional<Task> findById(UUID taskId);
-
-    Optional<Task> findByTaskId(UUID taskId);
-
-    Optional<Task> findBySessionIdAndTaskId(UUID sessionId, UUID taskId);
+    Optional<Task> findBySessionIdAndTaskTitle(UUID sessionId, String title);
 
     void deleteAllBySessionId(UUID sessionId);
 

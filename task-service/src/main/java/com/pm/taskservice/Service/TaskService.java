@@ -10,13 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 
 @Service
 public class TaskService {
@@ -39,12 +37,26 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    public TaskResponseDTO getTaskById(UUID taskId) {
-        logger.info("Fetching task with ID: {}", taskId);
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskNotFoundException("Task not found with ID: " + taskId));
-        return TaskMapper.toTaskResponseDTO(task);
+    /**
+     * Retrieves a task by a partial title match.
+     */
+    public TaskResponseDTO getTaskByTitle(String title) {
+        List<Task> tasks = taskRepository.findByTitleContainingIgnoreCase(title);
+        if (tasks.isEmpty()) {
+            throw new TaskNotFoundException("Task not found with title: " + title);
+        }
+        return TaskMapper.toTaskResponseDTO(tasks.get(0));
     }
+
+//    /**
+//     * Retrieves a task by session ID and exact title.
+//     */
+//    public TaskResponseDTO getTaskBySessionIdAndTaskTitle(UUID sessionId, String title) {
+//        logger.info("Fetching task with session ID: {} and title: {}", sessionId, title);
+//        Task task = taskRepository.findBySessionIdAndTaskTitle(sessionId, title)
+//                .orElseThrow(() -> new TaskNotFoundException("Task not found with session ID: " + sessionId + " and title: " + title));
+//        return TaskMapper.toTaskResponseDTO(task);
+//    }
 
     /**
      * Creates a new task based on the provided DTO.
