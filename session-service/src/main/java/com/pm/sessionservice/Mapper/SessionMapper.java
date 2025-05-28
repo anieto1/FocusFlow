@@ -11,11 +11,13 @@ public class SessionMapper {
         SessionResponseDTO sessionResponseDTO = new SessionResponseDTO();
         sessionResponseDTO.setSessionId(session.getSessionId());
         sessionResponseDTO.setOwnerUsername(session.getOwnerUsername());
+        sessionResponseDTO.setSessionName(session.getSessionName());
         sessionResponseDTO.setUserIds(session.getUserIds());
         sessionResponseDTO.setStartTime(session.getStartTime());
         sessionResponseDTO.setEndTime(session.getEndTime());
         sessionResponseDTO.setScheduledTime(session.getScheduledTime());
         sessionResponseDTO.setCreatedAt(session.getCreatedAt());
+        sessionResponseDTO.setStatus(session.getStatus());
         return sessionResponseDTO;
     }
 
@@ -24,10 +26,12 @@ public class SessionMapper {
 
         Session session = new Session();
         session.setOwnerUsername(sessionResponseDTO.getOwnerUsername());
+        session.setSessionName(sessionResponseDTO.getSessionName());
         session.setUserIds(sessionResponseDTO.getUserIds());
         session.setStartTime(sessionResponseDTO.getStartTime());
         session.setEndTime(sessionResponseDTO.getEndTime());
         session.setScheduledTime(sessionResponseDTO.getScheduledTime());
+        session.setStatus(sessionResponseDTO.getStatus());
         return session;
     }
 }
