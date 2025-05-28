@@ -1,5 +1,7 @@
 package com.pm.sessionservice.DTO;
 
+import com.pm.sessionservice.model.SessionStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -8,11 +10,13 @@ public class SessionResponseDTO {
 
     private UUID sessionId;
     private String ownerUsername;
-    private List<UUID> userIds;
+    private String sessionName;
+    private LocalDateTime scheduledTime;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private LocalDateTime scheduledTime;
     private LocalDateTime createdAt;
+    private List<UUID> userIds;
+    private SessionStatus status;
 
     // Getters and Setters
     public UUID getSessionId() {
@@ -30,6 +34,10 @@ public class SessionResponseDTO {
     public void setOwnerUsername(String ownerUsername) {
         this.ownerUsername = ownerUsername;
     }
+
+    public String getSessionName() {return sessionName;}
+
+    public void setSessionName(String sessionName) {this.sessionName = sessionName;}
 
     public List<UUID> getUserIds() {
         return userIds;
@@ -70,4 +78,8 @@ public class SessionResponseDTO {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public SessionStatus getStatus() { return status; }
+
+    public void setStatus(SessionStatus status) { this.status = status; }
 }

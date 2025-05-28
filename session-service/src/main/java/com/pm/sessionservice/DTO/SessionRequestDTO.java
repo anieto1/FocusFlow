@@ -1,5 +1,6 @@
 package com.pm.sessionservice.DTO;
 
+import com.pm.sessionservice.model.SessionStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -12,18 +13,17 @@ public class SessionRequestDTO {
     @NotBlank(message = "ownerUsername is required")
     private String ownerUsername;
 
+    @NotBlank
+    @Size(max = 20, message = "Title cannot be more than 20 characters")
+    private String sessionName;
+
     @Size(max = 10, message = "Cannot invite more than 10 users")
     private List<UUID> userIds;
-    private String title;
-    private int timeHr;
-    private int timeMin;
     private LocalDateTime scheduledTime;
-
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private SessionStatus status;
     // Getters and Setters
-
-    public String getTitle() { return title;}
-
-    public void setTitle(String title) { this.title = title;}
 
     public String getOwnerUsername() {
         return ownerUsername;
@@ -33,6 +33,10 @@ public class SessionRequestDTO {
         this.ownerUsername = ownerUsername;
     }
 
+    public String getSessionName() { return sessionName; }
+
+    public void setSessionName(String sessionName) { this.sessionName = sessionName; }
+
     public List<UUID> getUserIds() {
         return userIds;
     }
@@ -41,13 +45,13 @@ public class SessionRequestDTO {
         this.userIds = userIds;
     }
 
-    public int getTimeHr() { return timeHr;}
+    public LocalDateTime getStartTime(){ return startTime; }
 
-    public void setTimeHr(int timeHr) { this.timeHr = timeHr;}
+    public void setStartTime(LocalDateTime startTime){ this.startTime = startTime; }
 
-    public int getTimeMin() { return timeMin;}
+    public LocalDateTime getEndTime(){ return endTime; }
 
-    public void setTimeMin(int timeMin) { this.timeMin = timeMin;}
+    public void setEndTime(LocalDateTime endTime){ this.endTime = endTime; }
 
     public LocalDateTime getScheduledTime() {
         return scheduledTime;
@@ -56,4 +60,8 @@ public class SessionRequestDTO {
     public void setScheduledTime(LocalDateTime scheduledTime) {
         this.scheduledTime = scheduledTime;
     }
+
+    public SessionStatus getStatus() { return status; }
+
+    public void setStatus(SessionStatus status) { this.status = status; }
 }

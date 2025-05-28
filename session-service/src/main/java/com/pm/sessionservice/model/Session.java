@@ -48,12 +48,6 @@ public class Session {
     @Column(name = "user_id", nullable = false)
     private List<UUID> userIds = new ArrayList<>();
 
-    public enum SessionStatus {
-        SCHEDULED,
-        ACTIVE,
-        COMPLETED
-    }
-
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
