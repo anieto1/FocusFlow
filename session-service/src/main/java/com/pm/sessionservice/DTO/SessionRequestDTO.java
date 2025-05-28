@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public class SessionRequestDTO {
 
+    private UUID sessionId;
+
     @NotBlank(message = "ownerUsername is required")
     private String ownerUsername;
 
@@ -24,6 +26,11 @@ public class SessionRequestDTO {
     private LocalDateTime endTime;
     private SessionStatus status;
     // Getters and Setters
+
+
+    public UUID getSessionId() { return sessionId; }
+
+    public void setSessionId(UUID sessionId) { this.sessionId = sessionId; }
 
     public String getOwnerUsername() {
         return ownerUsername;

@@ -1,5 +1,6 @@
 package com.pm.sessionservice.Mapper;
 
+import com.pm.sessionservice.DTO.SessionRequestDTO;
 import com.pm.sessionservice.DTO.SessionResponseDTO;
 import com.pm.sessionservice.model.Session;
 
@@ -21,17 +22,18 @@ public class SessionMapper {
         return sessionResponseDTO;
     }
 
-    public static Session toSession(SessionResponseDTO sessionResponseDTO) {
-        if(sessionResponseDTO == null){ return null;}
+    public static Session toSession(SessionRequestDTO sessionRequestDTO) {
+        if(sessionRequestDTO == null){ return null;}
 
         Session session = new Session();
-        session.setOwnerUsername(sessionResponseDTO.getOwnerUsername());
-        session.setSessionName(sessionResponseDTO.getSessionName());
-        session.setUserIds(sessionResponseDTO.getUserIds());
-        session.setStartTime(sessionResponseDTO.getStartTime());
-        session.setEndTime(sessionResponseDTO.getEndTime());
-        session.setScheduledTime(sessionResponseDTO.getScheduledTime());
-        session.setStatus(sessionResponseDTO.getStatus());
+        session.setSessionId(sessionRequestDTO.getSessionId());
+        session.setOwnerUsername(sessionRequestDTO.getOwnerUsername());
+        session.setSessionName(sessionRequestDTO.getSessionName());
+        session.setUserIds(sessionRequestDTO.getUserIds());
+        session.setStartTime(sessionRequestDTO.getStartTime());
+        session.setEndTime(sessionRequestDTO.getEndTime());
+        session.setScheduledTime(sessionRequestDTO.getScheduledTime());
+        session.setStatus(sessionRequestDTO.getStatus());
         return session;
     }
 }

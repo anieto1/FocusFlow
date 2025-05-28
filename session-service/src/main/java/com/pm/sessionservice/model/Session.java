@@ -54,6 +54,7 @@ public class Session {
     }
 
     // === Getters & Setters ===
+    public void setSessionId(UUID sessionId) { this.sessionId = sessionId;}
 
     public UUID getSessionId() {
         return sessionId;
