@@ -23,7 +23,6 @@ public class SessionMapper {
         if(sessionResponseDTO == null){ return null;}
 
         Session session = new Session();
-        session.setSessionId(sessionResponseDTO.getSessionId());
         session.setOwnerUsername(sessionResponseDTO.getOwnerUsername());
         session.setUserIds(sessionResponseDTO.getUserIds());
         session.setStartTime(sessionResponseDTO.getStartTime());

@@ -1,7 +1,7 @@
 package com.pm.sessionservice.model;
 
 import jakarta.persistence.*;
-
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +16,29 @@ public class Session {
     @Column(name = "session_id", updatable = false, nullable = false)
     private UUID sessionId;
 
+    @NotNull
     @Column(name = "owner_username", nullable = false)
     private String ownerUsername;
+
+    @NotNull
+    @Column(name = "session_name", nullable = false)
+    private String sessionName;
+
+    @Column(name = "scheduled_time")
+    private LocalDateTime scheduledTime;
+
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private SessionStatus status = SessionStatus.SCHEDULED;
 
     @ElementCollection
     @CollectionTable(
@@ -27,35 +48,21 @@ public class Session {
     @Column(name = "user_id", nullable = false)
     private List<UUID> userIds = new ArrayList<>();
 
-    @Column(name = "start_time")
-    private LocalDateTime startTime;
+    public enum SessionStatus {
+        SCHEDULED,
+        ACTIVE,
+        COMPLETED
+    }
 
-    @Column(name = "end_time")
-    private LocalDateTime endTime;
-
-    @Column(name = "scheduled_time")
-    private LocalDateTime scheduledTime;
-
-    @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private SessionStatus status = SessionStatus.SCHEDULED;
-
-    // Automatically set createdAt on persist
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    // === Getters & Setters ===
+
     public UUID getSessionId() {
         return sessionId;
-    }
-
-    public void setSessionId(UUID sessionId) {
-        this.sessionId = sessionId;
     }
 
     public String getOwnerUsername() {
@@ -66,12 +73,20 @@ public class Session {
         this.ownerUsername = ownerUsername;
     }
 
-    public List<UUID> getUserIds() {
-        return userIds;
+    public String getSessionName() {
+        return sessionName;
     }
 
-    public void setUserIds(List<UUID> userIds) {
-        this.userIds = userIds;
+    public void setSessionName(String sessionName) {
+        this.sessionName = sessionName;
+    }
+
+    public LocalDateTime getScheduledTime() {
+        return scheduledTime;
+    }
+
+    public void setScheduledTime(LocalDateTime scheduledTime) {
+        this.scheduledTime = scheduledTime;
     }
 
     public LocalDateTime getStartTime() {
@@ -90,19 +105,23 @@ public class Session {
         this.endTime = endTime;
     }
 
-    public LocalDateTime getScheduledTime() {
-        return scheduledTime;
-    }
-
-    public void setScheduledTime(LocalDateTime scheduledTime) {
-        this.scheduledTime = scheduledTime;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public SessionStatus getStatus() { return status;}
+    public SessionStatus getStatus() {
+        return status;
+    }
 
-    public void setStatus(SessionStatus status) { this.status = status;}
+    public void setStatus(SessionStatus status) {
+        this.status = status;
+    }
+
+    public List<UUID> getUserIds() {
+        return userIds;
+    }
+
+    public void setUserIds(List<UUID> userIds) {
+        this.userIds = userIds;
+    }
 }

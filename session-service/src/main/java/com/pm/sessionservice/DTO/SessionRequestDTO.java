@@ -14,12 +14,17 @@ public class SessionRequestDTO {
 
     @Size(max = 10, message = "Cannot invite more than 10 users")
     private List<UUID> userIds;
-
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private String title;
+    private int timeHr;
+    private int timeMin;
     private LocalDateTime scheduledTime;
 
     // Getters and Setters
+
+    public String getTitle() { return title;}
+
+    public void setTitle(String title) { this.title = title;}
+
     public String getOwnerUsername() {
         return ownerUsername;
     }
@@ -36,21 +41,13 @@ public class SessionRequestDTO {
         this.userIds = userIds;
     }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
+    public int getTimeHr() { return timeHr;}
 
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
+    public void setTimeHr(int timeHr) { this.timeHr = timeHr;}
 
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
+    public int getTimeMin() { return timeMin;}
 
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
+    public void setTimeMin(int timeMin) { this.timeMin = timeMin;}
 
     public LocalDateTime getScheduledTime() {
         return scheduledTime;
