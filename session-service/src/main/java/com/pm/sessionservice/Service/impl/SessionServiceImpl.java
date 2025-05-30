@@ -9,6 +9,8 @@ import com.pm.sessionservice.model.Session;
 import jakarta.websocket.SessionException;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class SessionServiceImpl {
 
@@ -18,13 +20,13 @@ public class SessionServiceImpl {
         this.sessionRepository = sessionRepository;
     }
 
-    public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO) {
-//        if(sessionRepository.existsBySessionId(sessionRequestDTO.getSessionId())){
-//            throw new SessionException("A ")
-//        }
-        Session newSession = sessionRepository.save(SessionMapper.toSession(sessionRequestDTO));
 
+    public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO){
+        Session newSession = sessionRepository.save(SessionMapper.toSession(sessionRequestDTO));
         return SessionMapper.toSessionResponseDTO(newSession);
+    }
+
+    public SessionResponseDTO updateSession(UUID id,SessionRequestDTO sessionRequestDTO){
 
     }
 
