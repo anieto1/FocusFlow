@@ -3,10 +3,10 @@ package com.pm.sessionservice.Service.impl;
 
 import com.pm.sessionservice.DTO.SessionRequestDTO;
 import com.pm.sessionservice.DTO.SessionResponseDTO;
+import com.pm.sessionservice.Exception.SessionException;
 import com.pm.sessionservice.Mapper.SessionMapper;
 import com.pm.sessionservice.Repository.SessionRepository;
 import com.pm.sessionservice.model.Session;
-import jakarta.websocket.SessionException;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -27,7 +27,25 @@ public class SessionServiceImpl {
     }
 
     public SessionResponseDTO updateSession(UUID id,SessionRequestDTO sessionRequestDTO){
+        Session session = sessionRepository.findById(id).orElse(null);
 
+        if(session != null){
+            session.setSessionName(sessionRequestDTO.getSessionName());
+            session.setStatus(sessionRequestDTO.getStatus());
+            session.setStartTime(sessionRequestDTO.getStartTime());
+            session.setEndTime(sessionRequestDTO.getEndTime());
+            session.setScheduledTime(sessionRequestDTO.getScheduledTime());
+
+        }
+        Session updatedSession = sessionRepository.save(session);
+        return SessionMapper.toSessionResponseDTO(updatedSession);
+    }
+
+    public void deleteSession(UUID id){
+        if(!sessionRepository.existsById(id)){
+            throw new SessionException("Session not found with id: "+id);
+        }
+        sessionRepository.deleteById(id);
     }
 
 }
