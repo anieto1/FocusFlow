@@ -1,8 +1,6 @@
 package com.pm.sessionservice.Service;
 
-import com.pm.sessionservice.DTO.SessionRequestDTO;
-import com.pm.sessionservice.DTO.SessionResponseDTO;
-import com.pm.sessionservice.model.Session;
+import com.pm.sessionservice.DTO.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,32 +11,39 @@ import java.util.UUID;
 public interface SessionService {
 
     //CRUD operations
-    SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO);
-    SessionResponseDTO getSessionById(UUID sessionId, String userId);
-    SessionResponseDTO updateSession(UUID sessionId, SessionRequestDTO request);
-    void deleteSession(UUID sessionId);
+    SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO, UUID ownerId);
+    SessionResponseDTO getSessionById(UUID sessionId, UUID userId);
+    SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId);
+    void deleteSession(UUID sessionId, UUID ownerId);
 
     //Query Methods
-    Page<SessionResponseDTO> getSessionsByUser(String userId, Pageable pageable);
-    Page<SessionResponseDTO> getUpcomingSessions(String userId, Pageable pageable);
-    Page<SessionResponseDTO> getActiveSessionsByUser(String userId, Pageable pageable);
-    List<SessionResponseDTO> getSessionsByDateRange(String userId, LocalDateTime startDate, LocalDateTime endDate);
+    Page<SessionSummaryDTO> getSessionsByUser(UUID userId,Pageable pageable);
+    Page<SessionSummaryDTO> getUpcomingSessions(UUID userId, Pageable pageable);
+    Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable);
+    List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate);
 
     //Session Lifecycle Management
-    SessionResponseDTO startSession(UUID sessionId, String userId);
-    SessionResponseDTO stopSession(UUID sessionId, String userId);
-    SessionResponseDTO resumeSession(UUID sessionId, String userId);
-    SessionResponseDTO pauseSession(UUID sessionId, String userId);
-    SessionResponseDTO extendSession(UUID sessionId, String userId, int addedTime);
+    SessionResponseDTO startSession(UUID sessionId, UUID userId);
+    SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO);
+    SessionResponseDTO resumeSession(UUID sessionId, UUID userId);
+    SessionResponseDTO pauseSession(UUID sessionId, UUID userId);
+    SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime);
 
     //Participant Management
-    SessionResponseDTO inviteUser(UUID sessionId, String userId);
-    SessionResponseDTO removeUser(UUID sessionId, String userId);
-    void leaveSession(UUID sessionId, String userId);
-    List<SessionResponseDTO> getSessionUsers(UUID sessionId);
+    SessionResponseDTO inviteUser(UUID sessionId, UUID userId);
+    SessionResponseDTO removeUser(UUID sessionId, UUID userId);
+    SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
+    void leaveSession(UUID sessionId, UUID userId);
+    List<SessionResponseDTO> getSessionUsers(UUID sessionId, UUID userId);
 
     //Permission and Access control
     boolean isUserSessionOwner(UUID sessionId, String userId);
+    boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
+
+    // Validation & Business Rules
+    void validateSessionTiming(LocalDateTime startTime, LocalDateTime endTime);
+    void validateSessionCapacity(UUID sessionId, int additionalParticipants);
+    boolean isSessionTimeSlotAvailable(String userId, LocalDateTime startTime, LocalDateTime endTime);
 
 
 
