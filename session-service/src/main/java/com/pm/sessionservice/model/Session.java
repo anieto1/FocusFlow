@@ -2,6 +2,8 @@ package com.pm.sessionservice.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +11,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "sessions")
+@Data
 public class Session {
 
     @Id
@@ -48,75 +51,12 @@ public class Session {
     @Column(name = "user_id", nullable = false)
     private List<UUID> userIds = new ArrayList<>();
 
+    @Column
+    private String inviteCode;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // === Getters & Setters ===
-    public void setSessionId(UUID sessionId) { this.sessionId = sessionId;}
-
-    public UUID getSessionId() {
-        return sessionId;
-    }
-
-    public String getOwnerUsername() {
-        return ownerUsername;
-    }
-
-    public void setOwnerUsername(String ownerUsername) {
-        this.ownerUsername = ownerUsername;
-    }
-
-    public String getSessionName() {
-        return sessionName;
-    }
-
-    public void setSessionName(String sessionName) {
-        this.sessionName = sessionName;
-    }
-
-    public LocalDateTime getScheduledTime() {
-        return scheduledTime;
-    }
-
-    public void setScheduledTime(LocalDateTime scheduledTime) {
-        this.scheduledTime = scheduledTime;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public SessionStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(SessionStatus status) {
-        this.status = status;
-    }
-
-    public List<UUID> getUserIds() {
-        return userIds;
-    }
-
-    public void setUserIds(List<UUID> userIds) {
-        this.userIds = userIds;
-    }
 }
