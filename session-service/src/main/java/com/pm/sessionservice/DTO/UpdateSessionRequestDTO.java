@@ -1,6 +1,7 @@
 package com.pm.sessionservice.DTO;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -11,13 +12,13 @@ public class UpdateSessionRequestDTO {
     @NotBlank
     private String sessionName;
 
-    @NotBlank
+    @NotNull
     private LocalDateTime scheduledTime;
 
-    @NotBlank
+    @NotNull
     private LocalDateTime startTime;
 
-    @NotBlank
+    @NotNull
     private LocalDateTime endTime;
 
 
