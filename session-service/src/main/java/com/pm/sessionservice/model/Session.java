@@ -92,8 +92,4 @@ public class Session {
     @CollectionTable(name = "session_tasks", joinColumns = @JoinColumn(name = "session_id"))
     @Column(name = "task_id")
     private List<UUID> taskIds = new ArrayList<>();
-
-    // Participants are managed separately via SessionParticipantRepository
-    // No JPA relationship to avoid tight coupling
-
 }

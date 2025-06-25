@@ -12,9 +12,8 @@ public class SessionProgressDTO {
 
     private UUID sessionId;
     private LocalDateTime startTime;
-    private LocalDateTime endTime;
     private Duration elapsedTime;
-    private int taskCompleted;
+    private Integer taskCompleted;
     private List<UUID> activeParticipants;
 
 

@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.ValidationUtils;
 
@@ -24,6 +25,7 @@ public class SessionServiceImpl{
     private static final Logger log = LoggerFactory.getLogger(SessionServiceImpl.class);
     private final SessionRepository sessionRepository;
     private final SessionProperties sessionProperties;
+    private SessionMapper sessionMapper;
 
 
     //@Override
@@ -32,7 +34,7 @@ public class SessionServiceImpl{
         log.info("Creating new session for owner id {}", ownerId);
         Session session = new Session();
 
-        return SessionMapper.toSessionResponseDTO(session);
+        return sessionMapper.toResponseDTO(session);
     }
 
 }

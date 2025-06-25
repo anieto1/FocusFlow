@@ -1,6 +1,7 @@
 package com.pm.sessionservice.DTO;
 
 import com.pm.sessionservice.model.SessionStatus;
+import com.pm.sessionservice.model.SessionType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -19,5 +20,9 @@ public class SessionResponseDTO {
     private LocalDateTime createdAt;
     private List<UUID> userIds;
     private SessionStatus status;
-
+    private String inviteCode;
+    private String description;
+    private SessionType currentType;
+    private Boolean isWaitingForBreakSelection;
+    private List<UUID> takeIds;
 }
