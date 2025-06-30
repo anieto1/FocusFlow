@@ -44,5 +44,5 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             @Param("statuses") SessionStatus... statuses);
 
 
-
+    boolean existsByEmailAndSessionIdNot(UUID sessionId);
 }

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.ValidationUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -28,13 +29,35 @@ public class SessionServiceImpl{
     private SessionMapper sessionMapper;
 
 
-    //@Override
+    //CRUD operations
     @Transactional
-    public SessionResponseDTO createSession(SessionResponseDTO request, UUID ownerId){
+    public SessionResponseDTO createSession(SessionRequestDTO request, UUID ownerId){
         log.info("Creating new session for owner id {}", ownerId);
-        Session session = new Session();
-
-        return sessionMapper.toResponseDTO(session);
+        Session newSession = sessionRepository.save(sessionMapper.fromRequestDTO(request));
+        return sessionMapper.toResponseDTO(newSession);
     }
+
+    @Transactional
+    public SessionResponseDTO updateSession(SessionRequestDTO request, UUID ownerId){
+        Session session = sessionRepository.findById(ownerId).orElseThrow(()-> new SessionException("Session not found"));
+        log.info("Updating session for owner id {}", ownerId);
+
+        session.setSessionName(request.getSessionName());
+        session.setDescription(request.getDescription());
+        session.setScheduledTime(request.getScheduledTime());
+
+
+        return sessionMapper.toResponseDTO(sessionRepository.save(session));
+    }
+
+    @DeleteMapping
+    public void deleteSession(UUID ownerId){
+        log.info("Deleting session for owner id {}", ownerId);
+        if(sessionRepository.existsById(ownerId)){
+            throw new SessionException("Session not found");
+        }
+        sessionRepository.deleteById(ownerId);
+    }
+
 
 }
