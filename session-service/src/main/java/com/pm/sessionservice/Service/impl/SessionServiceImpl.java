@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -77,7 +78,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     //Query Methods
-    @Transactional
+    @Transactional(readOnly = true)
     public Page<SessionSummaryDTO> getSessionsByUser(UUID userId, Pageable pageable){
         log.info("Fetching sessions for user: {}", userId);
         
@@ -85,10 +86,7 @@ public class SessionServiceImpl implements SessionService {
         // For now, we'll use a placeholder method
         String username = getUsernameFromUserId(userId);
         
-        // Query sessions where user is owner or participant
         Page<Session> sessions = sessionRepository.findSessionsByUserInvolved(username, userId, pageable);
-        
-        // Convert to DTOs and return
         return sessions.map(sessionMapper::toSummaryDTO);
     }
 
@@ -122,14 +120,41 @@ public class SessionServiceImpl implements SessionService {
         return true;
     }
 
-    Page<SessionSummaryDTO> getUpcomingSessions(UUID userId, Pageable pageable){
-
+    @Transactional(readOnly = true)
+    public Page<SessionSummaryDTO> getUpcomingSessions(UUID userId, Pageable pageable){
+        log.info("Fetching upcoming sessions for user: {}", userId);
+        LocalDateTime now = LocalDateTime.now();
+        String username = getUsernameFromUserId(userId);
+        
+        Page<Session> upcomingSessions = sessionRepository.findUpcomingSessionsByUserInvolved(
+                username, userId, now, pageable);
+        return upcomingSessions.map(sessionMapper::toSummaryDTO);
     }
-    Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable){
-
+    @Transactional(readOnly = true)
+    public Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable){
+        log.info("Fetching active sessions for user: {}", userId);
+        
+        String username = getUsernameFromUserId(userId);
+        
+        Page<Session> activeSessions = sessionRepository.findActiveSessionsByUserInvolved(
+                username, userId, pageable);
+                
+        return activeSessions.map(sessionMapper::toSummaryDTO);
     }
-    List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate){
+    @Transactional(readOnly = true)
+    public List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate){
+        log.info("Fetching sessions for user: {} within dates: {} - {}", userId, startDate, endDate);
 
+        if (startDate.isAfter(endDate)) {
+            throw new InvalidSessionDataException("Start date cannot be after end date");
+        }
+        String username = getUsernameFromUserId(userId);
+        List<Session> sessions = sessionRepository.findSessionsByDateRangeInvolved(
+                username, userId, startDate, endDate);
+        
+        return sessions.stream()
+                .map(sessionMapper::toResponseDTO)
+                .toList();
     }
 
     //Session Lifecycle Management

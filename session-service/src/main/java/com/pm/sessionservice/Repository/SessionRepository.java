@@ -55,4 +55,47 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             @Param("username") String username,
             @Param("userId") UUID userId,
             Pageable pageable);
+
+    // Find upcoming sessions where user is owner or participant
+    @Query("SELECT DISTINCT s FROM Session s " +
+           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
+           "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
+           "AND s.scheduledTime > :currentTime " +
+           "AND s.status = 'SCHEDULED' " +
+           "AND s.isDeleted = false " +
+           "ORDER BY s.scheduledTime ASC")
+    Page<Session> findUpcomingSessionsByUserInvolved(
+            @Param("username") String username,
+            @Param("userId") UUID userId,
+            @Param("currentTime") LocalDateTime currentTime,
+            Pageable pageable);
+
+
+    // Find active sessions where user is owner or participant
+    @Query("SELECT DISTINCT s FROM Session s " +
+           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
+           "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
+           "AND s.status = 'ACTIVE' " +
+           "AND s.isDeleted = false " +
+           "ORDER BY s.startTime DESC")
+    Page<Session> findActiveSessionsByUserInvolved(
+            @Param("username") String username,
+            @Param("userId") UUID userId,
+            Pageable pageable);
+
+    // Find sessions by date range where user is owner or participant
+    @Query("SELECT DISTINCT s FROM Session s " +
+           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
+           "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
+           "AND s.isDeleted = false " +
+           "AND (s.scheduledTime BETWEEN :startDate AND :endDate " +
+           "     OR s.startTime BETWEEN :startDate AND :endDate " +
+           "     OR s.endTime BETWEEN :startDate AND :endDate) " +
+           "ORDER BY s.scheduledTime DESC")
+    List<Session> findSessionsByDateRangeInvolved(
+            @Param("username") String username,
+            @Param("userId") UUID userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
 }
