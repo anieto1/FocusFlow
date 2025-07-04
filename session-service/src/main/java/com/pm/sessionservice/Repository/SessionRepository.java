@@ -45,4 +45,14 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
 
     boolean existsByEmailAndSessionIdNot(UUID sessionId);
+
+    // Find sessions where user is either owner or participant
+    @Query("SELECT DISTINCT s FROM Session s " +
+           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
+           "WHERE s.ownerUsername = :username OR sp.userId = :userId " +
+           "ORDER BY s.createdAt DESC")
+    Page<Session> findSessionsByUserInvolved(
+            @Param("username") String username,
+            @Param("userId") UUID userId,
+            Pageable pageable);
 }

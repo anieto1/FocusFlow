@@ -1,6 +1,7 @@
 package com.pm.sessionservice.Service;
 
 import com.pm.sessionservice.DTO.*;
+import com.pm.sessionservice.model.SessionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -30,46 +31,34 @@ public interface SessionService {
     SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime);
 
     //Participant Management
-    SessionResponseDTO inviteUser(UUID sessionId, UUID userId);
-    SessionResponseDTO removeUser(UUID sessionId, UUID userId);
+    SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId);
+    SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId);
     SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
     void leaveSession(UUID sessionId, UUID userId);
-    List<SessionResponseDTO> getSessionUsers(UUID sessionId, UUID userId);
+    List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId);
+    String generateInviteCode(UUID sessionId, UUID ownerId);
 
     //Permission and Access control
-    boolean isUserSessionOwner(UUID sessionId, String userId);
+    boolean isUserSessionOwner(UUID sessionId, UUID userId);
     boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
 
     // Validation & Business Rules
     void validateSessionTiming(LocalDateTime startTime, LocalDateTime endTime);
     void validateSessionCapacity(UUID sessionId, int additionalParticipants);
-    boolean isSessionTimeSlotAvailable(String userId, LocalDateTime startTime, LocalDateTime endTime);
+    boolean isSessionTimeSlotAvailable(UUID userId, LocalDateTime startTime, LocalDateTime endTime);
 
+    //Pomodoro Phase Management
+    SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId);
+    SessionResponseDTO startBreakPhase(UUID sessionId, UUID userId, SessionType breakType);
+    SessionResponseDTO completeWorkPhase(UUID sessionId, UUID userId);
+    SessionResponseDTO skipBreak(UUID sessionId, UUID userId);
+    SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId);
+    BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //    List<SessionResponseDTO> getSessions();
-//    SessionResponseDTO getSession(UUID sessionId);
-//
-//    SessionResponseDTO startSession(UUID sessionId);
-//    SessionResponseDTO stopSession(UUID sessionId);
-//
-//    SessionResponseDTO addUserToSession(UUID sessionId, String userName);
-//    List<String> getUsersInSession(UUID sessionId);
-//
-//    List<SessionResponseDTO> getSessionsByUser(UUID userId);
-//    List<SessionResponseDTO> getUpcomingSessions();
+    //Task Management within Sessions
+    SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId);
+    SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId);
+    SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId);
+    List<UUID> getSessionTasks(UUID sessionId, UUID userId);
 
 }

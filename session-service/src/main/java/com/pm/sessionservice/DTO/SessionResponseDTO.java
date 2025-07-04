@@ -24,5 +24,16 @@ public class SessionResponseDTO {
     private String description;
     private SessionType currentType;
     private Boolean isWaitingForBreakSelection;
-    private List<UUID> takeIds;
+    private List<UUID> taskIds;
+    private Integer currentDurationMinutes;
+    private LocalDateTime currentPhaseStartTime;
+    private Integer totalWorkSessionsCompleted;
+    private Integer maxParticipants;
+    private Boolean isDeleted;
+    private LocalDateTime updatedAt;
+    private Integer workDurationMinutes;
+    private Integer shortBreakMinutes;
+    private Integer longBreakMinutes;
+    private List<UUID> participantIds;
+
 }

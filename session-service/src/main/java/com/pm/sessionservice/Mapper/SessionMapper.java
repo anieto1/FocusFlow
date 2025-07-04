@@ -2,6 +2,7 @@ package com.pm.sessionservice.Mapper;
 
 import com.pm.sessionservice.DTO.SessionRequestDTO;
 import com.pm.sessionservice.DTO.SessionResponseDTO;
+import com.pm.sessionservice.DTO.SessionSummaryDTO;
 import com.pm.sessionservice.model.Session;
 import org.mapstruct.Mapper;
 
@@ -9,6 +10,7 @@ import org.mapstruct.Mapper;
 public interface SessionMapper {
 
     SessionResponseDTO toResponseDTO(Session session);
+    SessionSummaryDTO toSummaryDTO(Session session);
     Session fromRequestDTO(SessionRequestDTO sessionRequestDTO);
 
 
