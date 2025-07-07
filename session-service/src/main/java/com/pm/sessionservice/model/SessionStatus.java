@@ -1,7 +1,7 @@
 package com.pm.sessionservice.model;
 
 public enum SessionStatus {
-    SCHEDULED,
+    CREATED,
     ACTIVE,
     COMPLETED,
     CANCELLED

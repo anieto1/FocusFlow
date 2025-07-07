@@ -19,12 +19,15 @@ public interface SessionService {
 
     //Query Methods
     Page<SessionSummaryDTO> getSessionsByUser(UUID userId,Pageable pageable);
-    Page<SessionSummaryDTO> getUpcomingSessions(UUID userId, Pageable pageable);
     Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable);
     List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate);
+    
+    // New utility methods
+    SessionResponseDTO getCurrentActiveSession(UUID userId);
+    boolean hasActiveSession(UUID userId);
+    SessionResponseDTO getSessionByInviteCode(String inviteCode);
 
     //Session Lifecycle Management
-    SessionResponseDTO startSession(UUID sessionId, UUID userId);
     SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO);
     SessionResponseDTO resumeSession(UUID sessionId, UUID userId);
     SessionResponseDTO pauseSession(UUID sessionId, UUID userId);
@@ -43,9 +46,7 @@ public interface SessionService {
     boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
 
     // Validation & Business Rules
-    void validateSessionTiming(LocalDateTime startTime, LocalDateTime endTime);
     void validateSessionCapacity(UUID sessionId, int additionalParticipants);
-    boolean isSessionTimeSlotAvailable(UUID userId, LocalDateTime startTime, LocalDateTime endTime);
 
     //Pomodoro Phase Management
     SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId);

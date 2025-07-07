@@ -19,11 +19,6 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     Page<Session> findByUserIdsContainingOrderByCreatedAtDesc(UUID userId, Pageable pageable);
 
-    List<Session> findByOwnerUsernameAndStatusAndScheduledTimeAfter(
-            String ownerUsername, SessionStatus status, LocalDateTime scheduledTime);
-
-    List<Session> findByUserIdsContainingAndStatusAndScheduledTimeAfter(
-            UUID userId, SessionStatus status, LocalDateTime scheduledTime);
 
     List<Session> findByOwnerUsernameAndStatus(String ownerUsername, SessionStatus status);
 
@@ -31,10 +26,11 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     boolean existsBySessionId(UUID sessionId);
 
+    // Check if user has any active sessions (for conflict detection)
+    boolean existsByOwnerUsernameAndStatus(String ownerUsername, SessionStatus status);
 
     @Query("SELECT s FROM Session s WHERE s.ownerUsername = :username " +
-            "AND ((s.scheduledTime BETWEEN :startTime AND :endTime) " +
-            "OR (s.startTime BETWEEN :startTime AND :endTime) " +
+            "AND ((s.startTime BETWEEN :startTime AND :endTime) " +
             "OR (s.endTime BETWEEN :startTime AND :endTime)) " +
             "AND s.status IN :statuses")
     List<Session> findConflictingSessions(
@@ -56,19 +52,6 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             @Param("userId") UUID userId,
             Pageable pageable);
 
-    // Find upcoming sessions where user is owner or participant
-    @Query("SELECT DISTINCT s FROM Session s " +
-           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
-           "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
-           "AND s.scheduledTime > :currentTime " +
-           "AND s.status = 'SCHEDULED' " +
-           "AND s.isDeleted = false " +
-           "ORDER BY s.scheduledTime ASC")
-    Page<Session> findUpcomingSessionsByUserInvolved(
-            @Param("username") String username,
-            @Param("userId") UUID userId,
-            @Param("currentTime") LocalDateTime currentTime,
-            Pageable pageable);
 
 
     // Find active sessions where user is owner or participant
@@ -88,10 +71,10 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
            "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
            "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
            "AND s.isDeleted = false " +
-           "AND (s.scheduledTime BETWEEN :startDate AND :endDate " +
-           "     OR s.startTime BETWEEN :startDate AND :endDate " +
-           "     OR s.endTime BETWEEN :startDate AND :endDate) " +
-           "ORDER BY s.scheduledTime DESC")
+           "AND (s.startTime BETWEEN :startDate AND :endDate " +
+           "     OR s.endTime BETWEEN :startDate AND :endDate " +
+           "     OR s.createdAt BETWEEN :startDate AND :endDate) " +
+           "ORDER BY s.startTime DESC")
     List<Session> findSessionsByDateRangeInvolved(
             @Param("username") String username,
             @Param("userId") UUID userId,

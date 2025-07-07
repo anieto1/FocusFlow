@@ -121,16 +121,6 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<SessionSummaryDTO> getUpcomingSessions(UUID userId, Pageable pageable){
-        log.info("Fetching upcoming sessions for user: {}", userId);
-        LocalDateTime now = LocalDateTime.now();
-        String username = getUsernameFromUserId(userId);
-        
-        Page<Session> upcomingSessions = sessionRepository.findUpcomingSessionsByUserInvolved(
-                username, userId, now, pageable);
-        return upcomingSessions.map(sessionMapper::toSummaryDTO);
-    }
-    @Transactional(readOnly = true)
     public Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable){
         log.info("Fetching active sessions for user: {}", userId);
         

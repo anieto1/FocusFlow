@@ -14,7 +14,6 @@ public class SessionResponseDTO {
     private UUID sessionId;
     private String ownerUsername;
     private String sessionName;
-    private LocalDateTime scheduledTime;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private LocalDateTime createdAt;

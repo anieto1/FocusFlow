@@ -16,7 +16,6 @@ public class SessionSummaryDTO {
     private String ownerUsername;
     private SessionStatus status;
     private SessionType currentType;
-    private LocalDateTime scheduledTime;
     private LocalDateTime startTime;
     private LocalDateTime createdAt;
 

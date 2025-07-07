@@ -15,16 +15,13 @@ import java.util.UUID;
 @Table(name = "sessions", indexes = {
         @Index(name = "idx_sessions_owner", columnList = "owner_username"),
         @Index(name = "idx_sessions_status", columnList = "status"),
-        @Index(name = "idx_sessions_scheduled_time", columnList = "scheduled_time"),
         @Index(name = "idx_sessions_start_time", columnList = "start_time"),
         @Index(name = "idx_sessions_end_time", columnList = "end_time"),
         @Index(name = "idx_sessions_invite_code", columnList = "invite_code"),
         @Index(name = "idx_sessions_deleted", columnList = "is_deleted"),
         @Index(name = "idx_sessions_created_at", columnList = "created_at"),
         @Index(name = "idx_sessions_owner_status", columnList = "owner_username, status"),
-        @Index(name = "idx_sessions_status_deleted", columnList = "status, is_deleted"),
-        @Index(name = "idx_sessions_owner_scheduled", columnList = "owner_username, scheduled_time"),
-        @Index(name = "idx_sessions_status_scheduled", columnList = "status, scheduled_time")
+        @Index(name = "idx_sessions_status_deleted", columnList = "status, is_deleted")
 })
 
 @Data
@@ -63,7 +60,7 @@ public class Session {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private SessionStatus status = SessionStatus.SCHEDULED;
+    private SessionStatus status = SessionStatus.ACTIVE;
 
     @Column(name = "invite_code", unique = true, length = 8)
     private String inviteCode;

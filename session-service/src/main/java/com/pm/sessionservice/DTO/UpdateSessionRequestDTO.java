@@ -3,17 +3,12 @@ package com.pm.sessionservice.DTO;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
 public class UpdateSessionRequestDTO {
 
     @Size(max = 20, message= "Title cannot exceed 20 characters")
     @NotBlank
     private String sessionName;
-
-    @NotNull
-    private LocalDateTime scheduledTime;
 
     @Size(max=255, message = "Description cannot exceed 255 characters")
     private String description;

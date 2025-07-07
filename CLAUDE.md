@@ -55,19 +55,23 @@ Building a collaborative pomodoro web application called Focus Flow with microse
    - ✅ **getSessionById()** - JUST COMPLETED
 
 ### 🔄 Currently Working On
-**getSessionById() method** - Recently completed with:
-- Fixed @Transactional import (Spring vs Jakarta)
-- Lightweight validation (only check isDeleted)
-- Removed overly restrictive access control
-- Single database query optimization
-- Proper error handling
+**MAJOR ARCHITECTURE CHANGE: Removed Scheduled Sessions**
+- Decision: Simplified session lifecycle by removing scheduling complexity
+- Sessions are now created and immediately activated (no scheduling)
+- New flow: Create → ACTIVE → Complete/Cancel (no SCHEDULED status)
 
-### 📋 Next Methods to Implement (in order)
-1. **getUpcomingSessions()** - scheduled sessions for user
-2. **getActiveSessionsByUser()** - currently running sessions
-3. **getSessionsByDateRange()** - date-filtered sessions
-4. **startSession()** - begin session lifecycle
-5. **endSession()** - complete session with metrics
+**Recent Completions:**
+- ✅ Updated SessionStatus enum: SCHEDULED → CREATED, default = ACTIVE
+- ✅ Cleaned Session model: removed scheduling indexes, kept scheduledTime field for future
+- ✅ Updated all DTOs: removed scheduledTime from API to simplify interface
+- 🔄 **Currently cleaning up SessionRepository** - removing scheduling queries
+
+### 📋 Next Tasks (Updated Priority)
+1. **Clean up SessionRepository** - Remove scheduling-related queries
+2. **Update service logic** - Implement simplified session lifecycle
+3. **Update createSession()** - Auto-start sessions (no separate start step)
+4. **Implement conflict detection** - "One active session per user" rule
+5. **Session lifecycle methods** - start work blocks, end sessions, pause/resume
 6. **pauseSession() / resumeSession()** - session state management
 7. **joinSession() / leaveSession()** - participant management
 8. Pomodoro phase methods (startWorkPhase, startBreakPhase, etc.)
