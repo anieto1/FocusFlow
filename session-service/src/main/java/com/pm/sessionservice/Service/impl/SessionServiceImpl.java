@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 @RequiredArgsConstructor
 @Service
@@ -31,211 +32,103 @@ public class SessionServiceImpl implements SessionService {
     private final SessionProperties sessionProperties;
     private final SessionMapper sessionMapper;
 
-
     //CRUD operations
-    @Transactional
-    public SessionResponseDTO createSession(SessionRequestDTO request, UUID ownerId){
-        log.info("Creating new session for owner id {}", ownerId);
-        Session newSession = sessionRepository.save(sessionMapper.fromRequestDTO(request));
+    @Transactional(readOnly = true)
+    public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO, UUID ownerId){
+
+        if(hasActiveSession(ownerId)){
+            throw new SessionAccessDeniedException("Cannot start a new session with a active session ");
+        }
+
+        Session newSession = sessionRepository.save(sessionMapper.fromRequestDTO(sessionRequestDTO));
+
+
         return sessionMapper.toResponseDTO(newSession);
     }
-
-    @Transactional(readOnly = true)
-    public SessionResponseDTO getSessionById(UUID sessionId, UUID userId){
-        log.info("Retrieving session {} for user {}", sessionId, userId);
-        
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new SessionException("Session not found with id: " + sessionId));
-        
-        // Light validation - only check if session is available
-        if (session.getIsDeleted()) {
-            throw new SessionException("Session no longer available");
-        }
-        
-        return sessionMapper.toResponseDTO(session);
-    }
-
-    @Transactional
-    public SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId){
-        Session session = sessionRepository.findById(sessionId).orElseThrow(()-> new SessionException("Session not found"));
-        log.info("Updating session for owner id {}", ownerId);
-
-        session.setSessionName(request.getSessionName());
-        session.setDescription(request.getDescription());
-        session.setScheduledTime(request.getScheduledTime());
-
-
-        return sessionMapper.toResponseDTO(sessionRepository.save(session));
-    }
-
-    @Transactional
-    public void deleteSession(UUID sessionId, UUID ownerId){
-        log.info("Deleting session for owner id {}", ownerId);
-        if(!sessionRepository.existsById(sessionId)){
-            throw new SessionException("Session not found");
-        }
-        sessionRepository.deleteById(sessionId);
-    }
+    SessionResponseDTO getSessionById(UUID sessionId, UUID userId);
+    SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId);
+    void deleteSession(UUID sessionId, UUID ownerId);
 
     //Query Methods
-    @Transactional(readOnly = true)
-    public Page<SessionSummaryDTO> getSessionsByUser(UUID userId, Pageable pageable){
-        log.info("Fetching sessions for user: {}", userId);
-        
-        // TODO: In a real microservices setup, call user-service to get username
-        // For now, we'll use a placeholder method
-        String username = getUsernameFromUserId(userId);
-        
-        Page<Session> sessions = sessionRepository.findSessionsByUserInvolved(username, userId, pageable);
-        return sessions.map(sessionMapper::toSummaryDTO);
-    }
+    Page<SessionSummaryDTO> getSessionsByUser(UUID userId,Pageable pageable);
+    Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable);
+    List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate);
 
-    // Helper method to get username from userId
-    // In a real microservices setup, this would call user-service
+
+
+
+    // New utility methods
+
+    //Placeholder for GRPC
     private String getUsernameFromUserId(UUID userId) {
         // TODO: Replace with actual call to user-service
         // Example: return userServiceClient.getUserById(userId).getUsername();
-        
+
         // For now, return a placeholder
         log.warn("Using placeholder username lookup for userId: {}", userId);
         return "user_" + userId.toString().substring(0, 8);
     }
 
-    // Helper method to check if user can access a session
-    private boolean canUserAccessSession(Session session, UUID userId) {
-        // Check if user is the owner
+    public SessionResponseDTO getCurrentActiveSession(UUID userId){
         String username = getUsernameFromUserId(userId);
-        if (session.getOwnerUsername().equals(username)) {
-            return true;
+        Optional<Session> activeSession = sessionRepository.findCurrentActiveSessionByUser(username, userId);
+
+        return activeSession
+                .map(sessionMapper :: toResponseDTO)
+                .orElseThrow(()-> new SessionException("No active session found for user: " + username));
+    }
+    public boolean hasActiveSession(UUID userId){
+        return getCurrentActiveSession(userId) != null;
+    }
+
+    public SessionResponseDTO getSessionByInviteCode(String inviteCode){
+        if(inviteCode == null || inviteCode.isEmpty()){
+            throw new InvalidSessionDataException("there is no invite code");
         }
-        
-        // Check if user is a participant
-        return isUserParticipant(session.getSessionId(), userId);
-    }
-
-    // Helper method to check if user is a participant in the session
-    private boolean isUserParticipant(UUID sessionId, UUID userId) {
-        // TODO: Query session_participants table
-        // For now, return true (will implement when we add participant repository)
-        return true;
-    }
-
-    @Transactional(readOnly = true)
-    public Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable){
-        log.info("Fetching active sessions for user: {}", userId);
-        
-        String username = getUsernameFromUserId(userId);
-        
-        Page<Session> activeSessions = sessionRepository.findActiveSessionsByUserInvolved(
-                username, userId, pageable);
-                
-        return activeSessions.map(sessionMapper::toSummaryDTO);
-    }
-    @Transactional(readOnly = true)
-    public List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate){
-        log.info("Fetching sessions for user: {} within dates: {} - {}", userId, startDate, endDate);
-
-        if (startDate.isAfter(endDate)) {
-            throw new InvalidSessionDataException("Start date cannot be after end date");
+        Optional<Session> inviteSession = sessionRepository.findByInviteCode(inviteCode);
+        if(inviteSession.isEmpty()){
+            throw new InvalidSessionDataException("there is no invite code");
         }
-        String username = getUsernameFromUserId(userId);
-        List<Session> sessions = sessionRepository.findSessionsByDateRangeInvolved(
-                username, userId, startDate, endDate);
-        
-        return sessions.stream()
-                .map(sessionMapper::toResponseDTO)
-                .toList();
+
+        return inviteSession
+                .map(sessionMapper ::toResponseDTO)
+                .orElseThrow(()-> new SessionException("No active session found with invite code: " + inviteCode));
     }
 
     //Session Lifecycle Management
-    SessionResponseDTO startSession(UUID sessionId, UUID userId){
-
-    }
-    SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO){
-
-    }
-    SessionResponseDTO resumeSession(UUID sessionId, UUID userId){
-
-    }
-    SessionResponseDTO pauseSession(UUID sessionId, UUID userId){
-
-    }
-    SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime){
-
-    }
+    SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO);
+    SessionResponseDTO resumeSession(UUID sessionId, UUID userId);
+    SessionResponseDTO pauseSession(UUID sessionId, UUID userId);
+    SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime);
 
     //Participant Management
-    SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId){
-
-    }
-    SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId){
-
-    }
-    SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode){
-
-    }
-    void leaveSession(UUID sessionId, UUID userId){
-
-    }
-    List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId){
-
-    }
-    String generateInviteCode(UUID sessionId, UUID ownerId){
-
-    }
+    SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId);
+    SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId);
+    SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
+    void leaveSession(UUID sessionId, UUID userId);
+    List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId);
+    String generateInviteCode(UUID sessionId, UUID ownerId);
 
     //Permission and Access control
-    boolean isUserSessionOwner(UUID sessionId, UUID userId){
-
-    }
-    boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode){
-
-    }
+    boolean isUserSessionOwner(UUID sessionId, UUID userId);
+    boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
 
     // Validation & Business Rules
-    void validateSessionTiming(LocalDateTime startTime, LocalDateTime endTime){
-
-    }
-    void validateSessionCapacity(UUID sessionId, int additionalParticipants){
-
-    }
-    boolean isSessionTimeSlotAvailable(UUID userId, LocalDateTime startTime, LocalDateTime endTime){
-
-    }
+    void validateSessionCapacity(UUID sessionId, int additionalParticipants);
 
     //Pomodoro Phase Management
-    SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId){
-
-    }
-    SessionResponseDTO startBreakPhase(UUID sessionId, UUID userId, SessionType breakType){
-
-    }
-    SessionResponseDTO completeWorkPhase(UUID sessionId, UUID userId){
-
-    }
-    SessionResponseDTO skipBreak(UUID sessionId, UUID userId){
-
-    }
-    SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId){
-
-    }
-    BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId){
-
-    }
+    SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId);
+    SessionResponseDTO startBreakPhase(UUID sessionId, UUID userId, SessionType breakType);
+    SessionResponseDTO completeWorkPhase(UUID sessionId, UUID userId);
+    SessionResponseDTO skipBreak(UUID sessionId, UUID userId);
+    SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId);
+    BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId);
 
     //Task Management within Sessions
-    SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId){
-
-    }
-    SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId){
-
-    }
-    SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId){
-
-    }
-    List<UUID> getSessionTasks(UUID sessionId, UUID userId){
-
-    }
+    SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId);
+    SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId);
+    SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId);
+    List<UUID> getSessionTasks(UUID sessionId, UUID userId);
 
 
 
