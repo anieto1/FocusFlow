@@ -43,6 +43,7 @@ public class SessionServiceImpl implements SessionService {
         Session newSession = sessionRepository.save(sessionMapper.fromRequestDTO(sessionRequestDTO));
 
 
+
         return sessionMapper.toResponseDTO(newSession);
     }
     SessionResponseDTO getSessionById(UUID sessionId, UUID userId);
