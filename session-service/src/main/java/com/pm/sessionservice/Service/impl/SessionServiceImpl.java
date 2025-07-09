@@ -10,6 +10,7 @@ import com.pm.sessionservice.Mapper.SessionMapper;
 import com.pm.sessionservice.Repository.SessionRepository;
 import com.pm.sessionservice.Service.SessionService;
 import com.pm.sessionservice.model.Session;
+import com.pm.sessionservice.model.SessionStatus;
 import com.pm.sessionservice.model.SessionType;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+
 @RequiredArgsConstructor
 @Service
 public class SessionServiceImpl implements SessionService {
@@ -33,19 +34,42 @@ public class SessionServiceImpl implements SessionService {
     private final SessionMapper sessionMapper;
 
     //CRUD operations
-    @Transactional(readOnly = true)
+    @Transactional
     public SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO, UUID ownerId){
+
+        if(sessionRequestDTO == null){
+            throw new InvalidSessionDataException("Invalid session data");
+        }
 
         if(hasActiveSession(ownerId)){
             throw new SessionAccessDeniedException("Cannot start a new session with a active session ");
         }
 
-        Session newSession = sessionRepository.save(sessionMapper.fromRequestDTO(sessionRequestDTO));
+        Session newSession = sessionMapper.fromRequestDTO(sessionRequestDTO);
+
+        String ownerUsername = getUsernameFromUserId(ownerId);
+        newSession.setOwnerUsername(ownerUsername);
+
+        newSession.setStatus(SessionStatus.ACTIVE);
+        newSession.setCreatedAt(LocalDateTime.now());
+        newSession.setStartTime(LocalDateTime.now());
+
+        newSession.setCurrentType(SessionType.WORK);
+        newSession.setCurrentPhaseStartTime(LocalDateTime.now());
+        newSession.setCurrentDurationMinutes(25);
+        newSession.setTotalWorkSessionsCompleted(0);
+        newSession.setIsWaitingForBreakSelection(false);
 
 
+        String inviteCode = generateInviteCode();
+        newSession.setInviteCode(inviteCode);
 
-        return sessionMapper.toResponseDTO(newSession);
+        Session savedSession = sessionRepository.save(newSession);
+
+
+        return sessionMapper.toResponseDTO(savedSession);
     }
+
     SessionResponseDTO getSessionById(UUID sessionId, UUID userId);
     SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId);
     void deleteSession(UUID sessionId, UUID ownerId);
@@ -79,7 +103,13 @@ public class SessionServiceImpl implements SessionService {
                 .orElseThrow(()-> new SessionException("No active session found for user: " + username));
     }
     public boolean hasActiveSession(UUID userId){
-        return getCurrentActiveSession(userId) != null;
+        try{
+            getCurrentActiveSession(userId);
+            return true;
+        }
+        catch(SessionException e){
+            return false;
+        }
     }
 
     public SessionResponseDTO getSessionByInviteCode(String inviteCode){
@@ -108,7 +138,9 @@ public class SessionServiceImpl implements SessionService {
     SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
     void leaveSession(UUID sessionId, UUID userId);
     List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId);
-    String generateInviteCode(UUID sessionId, UUID ownerId);
+    private String generateInviteCode(){
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
 
     //Permission and Access control
     boolean isUserSessionOwner(UUID sessionId, UUID userId);

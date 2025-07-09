@@ -39,7 +39,6 @@ public interface SessionService {
     SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
     void leaveSession(UUID sessionId, UUID userId);
     List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId);
-    String generateInviteCode(UUID sessionId, UUID ownerId);
 
     //Permission and Access control
     boolean isUserSessionOwner(UUID sessionId, UUID userId);
