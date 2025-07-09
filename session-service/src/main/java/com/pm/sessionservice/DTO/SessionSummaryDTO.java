@@ -27,5 +27,10 @@ public class SessionSummaryDTO {
     private Integer totalWorkSessionsCompleted;
     private Integer maxParticipants;
     private Boolean isWaitingForBreakSelection;
+    
+    // Pomodoro configuration display
+    private Integer workDurationMinutes;
+    private Integer shortBreakMinutes;
+    private Integer longBreakMinutes;
 
 }

@@ -20,16 +20,16 @@ public class SessionRequestDTO {
 
     private Integer maxParticipants;
 
-    @Min(value = 5, message = "Work duration must be at least 5 minutes")
-    @Max(value = 60, message = "Work duration cannot exceed 60 minutes")
+    @Min(value = 15, message = "Work duration must be at least 15 minutes")
+    @Max(value = 180, message = "Work duration cannot exceed 180 minutes")
     private Integer workDurationMinutes = 25;
 
-    @Min(value = 1, message = "Short break must be at least 1 minute")
-    @Max(value = 30, message = "Short break cannot exceed 30 minutes")
+    @Min(value = 5, message = "Short break must be at least 5 minutes")
+    @Max(value = 10, message = "Short break cannot exceed 10 minutes")
     private Integer shortBreakMinutes = 5;
 
-    @Min(value = 5, message = "Long break must be at least 5 minutes")
-    @Max(value = 60, message = "Long break cannot exceed 60 minutes")
+    @Min(value = 15, message = "Long break must be at least 15 minutes")
+    @Max(value = 25, message = "Long break cannot exceed 25 minutes")
     private Integer longBreakMinutes = 15;
 
     @Size(max = 20, message = "Cannot assign more than 20 tasks to a session")

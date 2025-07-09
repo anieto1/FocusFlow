@@ -17,7 +17,14 @@ Building a collaborative pomodoro web application called Focus Flow with microse
 - **gRPC**: user-service calls for immediate responses (profile lookups, validation)
 - **Kafka**: async events for analytics/notifications (session events, task completions)
 - **WebSockets**: real-time features (chat, notifications)
-- **Frontend Caching**: localStorage for session lists to reduce DB calls
+- **Service-to-Service**: Internal APIs for session management (no user-facing session endpoints)
+
+### Microservices Access Control Model
+- **Session Service**: Owner-only session configuration and pomodoro control (internal service calls)
+- **User Service**: Manages user-session relationships, "My Sessions" queries, access control
+- **Task Service**: Collaborative task management (owner + participants can add/complete tasks)
+- **Chat Service**: Real-time communication (owner + participants can chat)
+- **Clean Separation**: Each service owns its domain, user service handles all user-facing queries
 
 ## Current Session Service Status
 
@@ -27,32 +34,53 @@ Building a collaborative pomodoro web application called Focus Flow with microse
    - Added session_tasks table for task references
    - Added soft delete support with is_deleted column
 
-2. **DTOs Enhanced** - All 7 DTOs reviewed and improved
-   - SessionRequestDTO: Added validation, pomodoro configs, task assignment
-   - SessionResponseDTO: Added missing pomodoro fields, participant lists
-   - UpdateSessionRequestDTO: Fixed validation, added pomodoro updates
-   - SessionSummaryDTO: Added status, timing, progress indicators
+2. **Enhanced Database Schema** - V3__add_duration_config_fields.sql migration created
+   - Added user configuration fields: work_duration_minutes, short_break_duration_minutes, long_break_duration_minutes
+   - Added database constraints matching SessionProperties config (15-180, 5-10, 15-25)
+   - Added performance indexes for duration fields
+
+3. **DTOs Enhanced** - All 7 DTOs reviewed and improved
+   - SessionRequestDTO: Updated validation ranges to match SessionProperties (15-180, 5-10, 15-25)
+   - SessionResponseDTO: All pomodoro fields present and consistent
+   - UpdateSessionRequestDTO: Fixed validation ranges to match SessionProperties  
+   - SessionSummaryDTO: Added duration fields for session configuration display
    - SessionProgressDTO: Complete redesign for real-time tracking
    - EndSessionRequestDTO: Added validation and completion metrics
    - BreakSessionDTO: Already well-designed, no changes needed
 
-3. **Service Interface** - 64 methods total, cleaned and enhanced
+4. **Session Entity Enhanced** - Added user configuration fields
+   - Added workDurationMinutes, shortBreakMinutes, longBreakMinutes for user preferences
+   - Separated user configuration from runtime state (currentDurationMinutes, currentPhaseStartTime)
+   - Fixed field naming consistency between entity and DTOs
+   - Maintained task integration with taskIds List<UUID>
+
+5. **Service Interface** - 64 methods total, cleaned and enhanced
    - Fixed parameter inconsistencies (all UUID userId)
    - Added pomodoro phase management (6 methods)
    - Added task management within sessions (4 methods)
    - Enhanced participant management
-   - Added invite code generation
+   - Removed generateInviteCode() from interface (made private in implementation)
 
-4. **Repository Updates**
+6. **Repository Updates**
    - Added findSessionsByUserInvolved() query for user access
    - Fixed participant table joins
 
-5. **Service Implementation Started**
-   - ✅ createSession() - working
-   - ✅ updateSession() - working  
-   - ✅ deleteSession() - working
-   - ✅ getSessionsByUser() - implemented with pagination
-   - ✅ **getSessionById()** - JUST COMPLETED
+7. **SessionMapper Enhanced** - Perfect field name consistency achieved
+   - Uses MapStruct auto-mapping for all duration fields
+   - Fixed field naming consistency between entity and DTOs
+   - No manual mapping annotations required
+   - Handles user configuration and runtime state fields automatically
+
+8. **Service Architecture Refactored** - Clean service boundaries established
+   - ✅ Removed all user-specific query methods (moved to user service responsibility)
+   - ✅ Session service now purely internal API (service-to-service only)  
+   - ✅ Removed getSessionById() - user service handles user-facing session queries
+   - ✅ Clean separation: session config vs collaborative features
+
+9. **Service Implementation Status**
+   - ✅ createSession() - COMPLETED with duration fields, validation, and pomodoro initialization
+   - ❌ updateSession() - needs implementation  
+   - ❌ deleteSession() - needs implementation
 
 ### 🔄 Currently Working On
 **MAJOR ARCHITECTURE OVERHAUL COMPLETED: Removed Scheduled Sessions**
@@ -87,62 +115,69 @@ Building a collaborative pomodoro web application called Focus Flow with microse
    - ✅ Added utility methods: `getCurrentActiveSession()`, `hasActiveSession()`, `getSessionByInviteCode()`
    - ✅ Removed `generateInviteCode()` from interface - made private in implementation
 
-**🔄 Current Implementation Status (Service Layer):**
+**✅ Current Implementation Status (Service Layer):**
 - ✅ **getCurrentActiveSession()** - Implemented with Optional handling
 - ✅ **hasActiveSession()** - Fixed exception handling bug, now properly returns boolean
 - ✅ **getSessionByInviteCode()** - Implemented with validation and error handling
-- ✅ **createSession()** - COMPLETED with full session initialization, pomodoro fields, and invite code generation
+- ✅ **createSession()** - COMPLETED with duration fields, SessionProperties validation, pomodoro initialization
 - ✅ **generateInviteCode()** - Implemented as private method (removed from interface)
 
+**🔄 Architecture Overhaul Status:**
+- ✅ **Service Boundaries**: Session service now internal-only, user service handles user-facing queries
+- ✅ **Access Control Model**: Owner-only session changes, collaborative features in other services
+- ✅ **Removed User Query Methods**: Cleaned up session service to focus on session management only
+
 ### 📋 Next Implementation Tasks
-1. **Complete CRUD Operations**:
-   - ✅ createSession() - COMPLETED with full session initialization, pomodoro fields, and invite code generation
-   - ❌ getSessionById() - needs implementation
-   - ❌ updateSession() - needs implementation  
-   - ❌ deleteSession() - needs implementation
+1. **Complete Core CRUD Operations** (Service-to-Service):
+   - ✅ **createSession()** - COMPLETED with full validation and initialization
+   - ❌ **updateSession()** - needs implementation (owner-only session config changes)
+   - ❌ **deleteSession()** - needs implementation (owner-only)
 
-2. **Invite Code System**:
-   - ✅ Implement `generateInviteCode()` method (8-character alphanumeric)
-   - ✅ Auto-generate codes during session creation
+2. **Session Lifecycle Management** (Owner-Only):
+   - ❌ **endSession()** - complete session with metrics  
+   - ❌ **pauseSession() / resumeSession()** - session state management
+   - ❌ **extendSession()** - extend session duration
+
+3. **Pomodoro Phase Management** (Owner-Controlled):
+   - ❌ **startWorkPhase()** - transition to work phase
+   - ❌ **startBreakPhase()** - transition to break phase (short/long)
+   - ❌ **completeWorkPhase()** - mark work phase complete
+   - ❌ **skipBreak()** - skip break and return to work
+
+4. **Advanced Features** (Lower Priority):
    - ❌ Add invite code refresh functionality
+   - ❌ Session capacity validation
+   - ❌ Enhanced session metrics and analytics
 
-3. **Session Lifecycle Management**:
-   - ❌ endSession() - complete session with metrics
-   - ❌ pauseSession() / resumeSession() - session state management
-   - ❌ extendSession() - extend session duration
-
-4. **Advanced Features** (Later Priority):
-   - Participant management methods
-   - Pomodoro phase management methods
-   - Task management within sessions
-6. **pauseSession() / resumeSession()** - session state management
-7. **joinSession() / leaveSession()** - participant management
-8. Pomodoro phase methods (startWorkPhase, startBreakPhase, etc.)
-9. Task management methods within sessions
 
 ### 🏗️ Architecture Decisions Made
-1. **Access Control Strategy**: Trust session list source, lightweight validation only
-2. **Caching Strategy**: Frontend localStorage caching, optional backend @Cacheable later
-3. **Error Handling**: SessionException for not found, SessionAccessDeniedException for unauthorized
-4. **User Lookup**: getUsernameFromUserId() placeholder for future gRPC integration
-5. **Transaction Strategy**: @Transactional(readOnly = true) for queries, regular @Transactional for writes
+1. **Service Boundaries**: Session service is internal-only, user service handles all user-facing queries
+2. **Access Control Model**: Owner-only session changes, collaborative features handled by other services
+3. **User-Session Relationships**: Stored in user service, not session service (better scalability)
+4. **Session Data Storage**: Session service stores session config, user service stores participation history
+5. **Error Handling**: SessionException for not found, SessionAccessDeniedException for unauthorized
+6. **User Lookup**: getUsernameFromUserId() placeholder for future gRPC integration
+7. **Transaction Strategy**: @Transactional(readOnly = true) for queries, regular @Transactional for writes
 
 ### 🐛 Recent Issues Resolved
 - **@Transactional import error**: Changed from `jakarta.transaction.Transactional` to `org.springframework.transaction.annotation.Transactional` for readOnly support
-- **Access control**: Simplified from complex participant checking to simple availability checking
-- **Repository queries**: Added proper JOIN for participants table
 - **hasActiveSession() bug**: Fixed exception handling to properly return boolean instead of throwing exceptions
 - **createSession() owner field**: Fixed to use setOwnerUsername() instead of setOwnerUserId() to match entity
 - **generateInviteCode() timing**: Fixed to call before save instead of after, removed sessionId parameter
 - **Pomodoro initialization**: Added proper initialization of all pomodoro fields during session creation
+- **Service boundaries**: Removed all user-specific query methods, cleaned up service responsibilities
+- **Field naming consistency**: Fixed entity-DTO field name mismatches for perfect MapStruct auto-mapping
+- **DTO validation ranges**: Updated all DTOs to match SessionProperties configuration (15-180, 5-10, 15-25)
 
 ### 📁 Key Files Modified
-- `/src/main/resources/db/migration/V2__add_pomodoro_fields.sql` - NEW
-- `/src/main/java/com/pm/sessionservice/DTO/` - All DTOs enhanced
-- `/src/main/java/com/pm/sessionservice/Service/SessionService.java` - Interface cleaned
-- `/src/main/java/com/pm/sessionservice/Service/impl/SessionServiceImpl.java` - 4 methods implemented
-- `/src/main/java/com/pm/sessionservice/Repository/SessionRepository.java` - Added user involvement query
-- `/src/main/java/com/pm/sessionservice/Mapper/SessionMapper.java` - Added toSummaryDTO
+- `/src/main/resources/db/migration/V2__add_pomodoro_fields.sql` - Pomodoro runtime state fields
+- `/src/main/resources/db/migration/V3__add_duration_config_fields.sql` - NEW: User configuration fields
+- `/src/main/java/com/pm/sessionservice/model/Session.java` - Added duration config fields, fixed naming consistency
+- `/src/main/java/com/pm/sessionservice/DTO/` - All DTOs enhanced with proper validation ranges
+- `/src/main/java/com/pm/sessionservice/Service/SessionService.java` - Interface streamlined, removed user query methods, service-to-service only
+- `/src/main/java/com/pm/sessionservice/Service/impl/SessionServiceImpl.java` - createSession completed, removed user query methods
+- `/src/main/java/com/pm/sessionservice/Repository/SessionRepository.java` - Cleaned up user query methods, kept essential conflict detection
+- `/src/main/java/com/pm/sessionservice/Mapper/SessionMapper.java` - Perfect field name consistency for auto-mapping
 
 ### 🧪 Testing Strategy
 Need to test:
@@ -185,11 +220,11 @@ Need to test:
 - Service interface evolution and method lifecycle management
 
 ## Next Session Action Items
-1. **Complete CRUD Operations**: Finish implementing getSessionById(), updateSession(), deleteSession()
-2. **Session Lifecycle Methods**: Implement endSession(), pauseSession(), resumeSession()
-3. **Testing**: Test the completed createSession() method and conflict detection logic
-4. **Future Integration**: Plan gRPC integration for user service calls and Kafka event publishing
-5. **Invite Code Refresh**: Add functionality to regenerate invite codes for existing sessions
+1. **Complete Core CRUD Operations**: Implement updateSession() and deleteSession() (owner-only, service-to-service)
+2. **Session Lifecycle Management**: Implement endSession(), pauseSession(), resumeSession() (owner-controlled)  
+3. **Pomodoro Phase Management**: Implement startWorkPhase(), startBreakPhase(), completeWorkPhase(), skipBreak()
+4. **Testing**: Test the completed createSession() method and new service architecture
+5. **Integration Planning**: Design gRPC calls for user service integration and Kafka event publishing
 
 ## Quick Resume Commands
 ```bash

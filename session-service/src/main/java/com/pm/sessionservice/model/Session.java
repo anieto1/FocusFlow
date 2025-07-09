@@ -81,6 +81,17 @@ public class Session {
     @Column(name = "current_type", nullable = false)
     private SessionType currentType = SessionType.WORK;
 
+    // User's base pomodoro configuration
+    @Column(name = "work_duration_minutes", nullable = false)
+    private Integer workDurationMinutes = 25;
+
+    @Column(name = "short_break_duration_minutes", nullable = false)
+    private Integer shortBreakMinutes = 5;
+
+    @Column(name = "long_break_duration_minutes", nullable = false)
+    private Integer longBreakMinutes = 15;
+
+    // Runtime state tracking
     @Column(name = "current_duration_minutes", nullable = false)
     private Integer currentDurationMinutes = 25;
 

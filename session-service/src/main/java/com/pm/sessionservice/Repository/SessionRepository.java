@@ -17,14 +17,6 @@ import java.util.UUID;
 @Repository
 public interface SessionRepository extends JpaRepository<Session, UUID> {
 
-    Page<Session> findByOwnerUsernameOrderByCreatedAtDesc(String ownerUsername, Pageable pageable);
-
-    Page<Session> findByUserIdsContainingOrderByCreatedAtDesc(UUID userId, Pageable pageable);
-
-
-    List<Session> findByOwnerUsernameAndStatus(String ownerUsername, SessionStatus status);
-
-    List<Session> findByUserIdsContainingAndStatus(UUID userId, SessionStatus status);
 
     boolean existsBySessionId(UUID sessionId);
 
@@ -44,44 +36,6 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
     boolean existsByEmailAndSessionIdNot(UUID sessionId);
 
-    // Find sessions where user is either owner or participant
-    @Query("SELECT DISTINCT s FROM Session s " +
-           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
-           "WHERE s.ownerUsername = :username OR sp.userId = :userId " +
-           "ORDER BY s.createdAt DESC")
-    Page<Session> findSessionsByUserInvolved(
-            @Param("username") String username,
-            @Param("userId") UUID userId,
-            Pageable pageable);
-
-
-
-    // Find active sessions where user is owner or participant
-    @Query("SELECT DISTINCT s FROM Session s " +
-           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
-           "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
-           "AND s.status = 'ACTIVE' " +
-           "AND s.isDeleted = false " +
-           "ORDER BY s.startTime DESC")
-    Page<Session> findActiveSessionsByUserInvolved(
-            @Param("username") String username,
-            @Param("userId") UUID userId,
-            Pageable pageable);
-
-    // Find sessions by date range where user is owner or participant
-    @Query("SELECT DISTINCT s FROM Session s " +
-           "LEFT JOIN SessionParticipant sp ON s.sessionId = sp.sessionId " +
-           "WHERE (s.ownerUsername = :username OR sp.userId = :userId) " +
-           "AND s.isDeleted = false " +
-           "AND (s.startTime BETWEEN :startDate AND :endDate " +
-           "     OR s.endTime BETWEEN :startDate AND :endDate " +
-           "     OR s.createdAt BETWEEN :startDate AND :endDate) " +
-           "ORDER BY s.startTime DESC")
-    List<Session> findSessionsByDateRangeInvolved(
-            @Param("username") String username,
-            @Param("userId") UUID userId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate);
 
 //find active sessions y user involved without pagination
     @Query("SELECT DISTINCT s FROM Session s " +
@@ -102,5 +56,6 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             "AND s.status = 'ACTIVE' " +
             "AND s.isDeleted = false")
     Optional<Session> findByInviteCode(@Param("inviteCode") String inviteCode);
+
 
 }

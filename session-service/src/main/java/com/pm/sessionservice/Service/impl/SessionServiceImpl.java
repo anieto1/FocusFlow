@@ -45,39 +45,40 @@ public class SessionServiceImpl implements SessionService {
             throw new SessionAccessDeniedException("Cannot start a new session with a active session ");
         }
 
+        if (sessionRequestDTO.getWorkDurationMinutes() < sessionProperties.getMinWorkDurationMinutes() ||
+                sessionRequestDTO.getWorkDurationMinutes() > sessionProperties.getMaxWorkDurationMinutes()) {
+            throw new InvalidSessionDataException("Work duration must be between " +
+                    sessionProperties.getMinWorkDurationMinutes() + "-" +
+                    sessionProperties.getMaxWorkDurationMinutes() + " minutes");
+        }
+
+        //Creates new session
         Session newSession = sessionMapper.fromRequestDTO(sessionRequestDTO);
+        log.info("Creating new session {}"+" for user {}", newSession, ownerId);
 
-        String ownerUsername = getUsernameFromUserId(ownerId);
-        newSession.setOwnerUsername(ownerUsername);
+        //Assigns creator user as the owner
+        newSession.setOwnerUsername(getUsernameFromUserId(ownerId));
 
-        newSession.setStatus(SessionStatus.ACTIVE);
+        //Declares when session was created
         newSession.setCreatedAt(LocalDateTime.now());
         newSession.setStartTime(LocalDateTime.now());
 
-        newSession.setCurrentType(SessionType.WORK);
-        newSession.setCurrentPhaseStartTime(LocalDateTime.now());
-        newSession.setCurrentDurationMinutes(25);
-        newSession.setTotalWorkSessionsCompleted(0);
-        newSession.setIsWaitingForBreakSelection(false);
+
+        //Creating unique invite code for session
+        newSession.setInviteCode(generateInviteCode());
 
 
-        String inviteCode = generateInviteCode();
-        newSession.setInviteCode(inviteCode);
 
+        //Saves changes and changes session status to ACTIVE
+        newSession.setStatus(SessionStatus.ACTIVE);
         Session savedSession = sessionRepository.save(newSession);
-
+        log.info("Created session {}"+" with invite code {}", savedSession.getSessionId(), savedSession.getInviteCode());
 
         return sessionMapper.toResponseDTO(savedSession);
     }
 
-    SessionResponseDTO getSessionById(UUID sessionId, UUID userId);
     SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId);
     void deleteSession(UUID sessionId, UUID ownerId);
-
-    //Query Methods
-    Page<SessionSummaryDTO> getSessionsByUser(UUID userId,Pageable pageable);
-    Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable);
-    List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate);
 
 
 
@@ -145,6 +146,7 @@ public class SessionServiceImpl implements SessionService {
     //Permission and Access control
     boolean isUserSessionOwner(UUID sessionId, UUID userId);
     boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
+
 
     // Validation & Business Rules
     void validateSessionCapacity(UUID sessionId, int additionalParticipants);

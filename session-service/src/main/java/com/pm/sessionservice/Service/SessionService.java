@@ -11,18 +11,12 @@ import java.util.UUID;
 
 public interface SessionService {
 
-    //CRUD operations
+    //CRUD operations (service-to-service only)
     SessionResponseDTO createSession(SessionRequestDTO sessionRequestDTO, UUID ownerId);
-    SessionResponseDTO getSessionById(UUID sessionId, UUID userId);
     SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId);
     void deleteSession(UUID sessionId, UUID ownerId);
 
-    //Query Methods
-    Page<SessionSummaryDTO> getSessionsByUser(UUID userId,Pageable pageable);
-    Page<SessionSummaryDTO> getActiveSessionsByUser(UUID userId, Pageable pageable);
-    List<SessionResponseDTO> getSessionsByDateRange(UUID userId, LocalDateTime startDate, LocalDateTime endDate);
-    
-    // New utility methods
+    // Session lookup methods
     SessionResponseDTO getCurrentActiveSession(UUID userId);
     boolean hasActiveSession(UUID userId);
     SessionResponseDTO getSessionByInviteCode(String inviteCode);
