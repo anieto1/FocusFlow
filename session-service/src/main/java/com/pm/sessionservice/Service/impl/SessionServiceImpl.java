@@ -6,6 +6,7 @@ import com.pm.sessionservice.DTO.*;
 import com.pm.sessionservice.Exception.InvalidSessionDataException;
 import com.pm.sessionservice.Exception.SessionAccessDeniedException;
 import com.pm.sessionservice.Exception.SessionException;
+import com.pm.sessionservice.Exception.SessionNotFoundException;
 import com.pm.sessionservice.Mapper.SessionMapper;
 import com.pm.sessionservice.Repository.SessionRepository;
 import com.pm.sessionservice.Service.SessionService;
@@ -19,10 +20,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.DeleteMapping;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 
 @RequiredArgsConstructor
@@ -63,6 +67,10 @@ public class SessionServiceImpl implements SessionService {
         newSession.setCreatedAt(LocalDateTime.now());
         newSession.setStartTime(LocalDateTime.now());
 
+        //Pomodoro initialization
+        newSession.setCurrentType(SessionType.WORK);
+        newSession.setCurrentPhaseStartTime(LocalDateTime.now());
+        newSession.setCurrentDurationMinutes(newSession.getWorkDurationMinutes());
 
         //Creating unique invite code for session
         newSession.setInviteCode(generateInviteCode());
@@ -77,8 +85,111 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toResponseDTO(savedSession);
     }
 
-    SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId);
-    void deleteSession(UUID sessionId, UUID ownerId);
+    @Transactional
+    public SessionResponseDTO updateSession(UUID sessionId, UpdateSessionRequestDTO request, UUID ownerId){
+        log.info("Updating session {} by owner {}", sessionId, ownerId);
+
+        // Find session and validate ownership
+        Session session = sessionRepository.findById(sessionId)
+            .orElseThrow(()->new SessionNotFoundException("Session not found"));
+        
+        validateOwnership(session, ownerId);
+        validateUpdateRequest(request);
+        
+        // Update session fields
+        updateSessionFields(session, request);
+
+        Session updatedSession = sessionRepository.save(session);
+        log.info("Successfully updated session {}", sessionId);
+        
+        return sessionMapper.toResponseDTO(updatedSession);
+    }
+
+    private void validateOwnership(Session session, UUID ownerId) {
+        String ownerUsername = getUsernameFromUserId(ownerId);
+        if (!session.getOwnerUsername().equals(ownerUsername)) {
+            throw new SessionAccessDeniedException("Only session owner can update session");
+        }
+    }
+
+    private void validateUpdateRequest(UpdateSessionRequestDTO request) {
+        if (request.getWorkDurationMinutes() != null &&
+                (request.getWorkDurationMinutes() < sessionProperties.getMinWorkDurationMinutes() ||
+                        request.getWorkDurationMinutes() > sessionProperties.getMaxWorkDurationMinutes())) {
+            throw new InvalidSessionDataException("Work duration must be between " +
+                    sessionProperties.getMinWorkDurationMinutes() + "-" +
+                    sessionProperties.getMaxWorkDurationMinutes() + " minutes");
+        }
+        
+        if (request.getShortBreakMinutes() != null &&
+                (request.getShortBreakMinutes() < sessionProperties.getMinShortBreakMinutes() ||
+                        request.getShortBreakMinutes() > sessionProperties.getMaxShortBreakMinutes())) {
+            throw new InvalidSessionDataException("Short break duration must be between " +
+                    sessionProperties.getMinShortBreakMinutes() + "-" +
+                    sessionProperties.getMaxShortBreakMinutes() + " minutes");
+        }
+        
+        if (request.getLongBreakMinutes() != null &&
+                (request.getLongBreakMinutes() < sessionProperties.getMinLongBreakMinutes() ||
+                        request.getLongBreakMinutes() > sessionProperties.getMaxLongBreakMinutes())) {
+            throw new InvalidSessionDataException("Long break duration must be between " +
+                    sessionProperties.getMinLongBreakMinutes() + "-" +
+                    sessionProperties.getMaxLongBreakMinutes() + " minutes");
+        }
+    }
+
+    private void updateSessionFields(Session session, UpdateSessionRequestDTO request) {
+        updateIfNotNull(request.getSessionName(), session::setSessionName);
+        updateIfNotNull(request.getDescription(), session::setDescription);
+        updateIfNotNull(request.getLongBreakMinutes(), session::setLongBreakMinutes);
+        updateIfNotNull(request.getShortBreakMinutes(), session::setShortBreakMinutes);
+        
+        if (request.getWorkDurationMinutes() != null) {
+            session.setWorkDurationMinutes(request.getWorkDurationMinutes());
+            // Update current phase duration if currently in WORK phase
+            if (session.getCurrentType() == SessionType.WORK) {
+                session.setCurrentDurationMinutes(request.getWorkDurationMinutes());
+            }
+        }
+    }
+
+    private <T> void updateIfNotNull(T value, Consumer<T> setter) {
+        if (value != null) {
+            setter.accept(value);
+        }
+    }
+
+    @Transactional
+    public void deleteSession(UUID sessionId, UUID ownerId){
+        log.info("Deleting session {} by owner {}", sessionId, ownerId);
+        
+        // Find session and validate ownership
+        Session session = sessionRepository.findById(sessionId)
+            .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        
+        validateOwnership(session, ownerId);
+        
+        // Check if session can be deleted (business rules)
+        validateSessionDeletion(session);
+        
+        // Soft delete (set isDeleted = true)
+        session.setIsDeleted(true);
+        session.setUpdatedAt(LocalDateTime.now());
+        
+        sessionRepository.save(session);
+        log.info("Successfully deleted session {}", sessionId);
+    }
+    
+    private void validateSessionDeletion(Session session) {
+        // Optional: Add business rules for deletion
+        // For example, you might want to prevent deletion of active sessions
+        // if (session.getStatus() == SessionStatus.ACTIVE) {
+        //     throw new InvalidSessionDataException("Cannot delete active session. End session first.");
+        // }
+        
+        // For now, allow deletion of any session
+        log.debug("Session {} passed deletion validation", session.getSessionId());
+    }
 
 
 
@@ -114,28 +225,40 @@ public class SessionServiceImpl implements SessionService {
     }
 
     public SessionResponseDTO getSessionByInviteCode(String inviteCode){
-        if(inviteCode == null || inviteCode.isEmpty()){
-            throw new InvalidSessionDataException("there is no invite code");
+        log.info("Looking up session with invite code: {}", inviteCode);
+        
+        if(inviteCode == null || inviteCode.trim().isEmpty()){
+            throw new InvalidSessionDataException("Invite code cannot be null or empty");
         }
-        Optional<Session> inviteSession = sessionRepository.findByInviteCode(inviteCode);
-        if(inviteSession.isEmpty()){
-            throw new InvalidSessionDataException("there is no invite code");
-        }
-
-        return inviteSession
-                .map(sessionMapper ::toResponseDTO)
-                .orElseThrow(()-> new SessionException("No active session found with invite code: " + inviteCode));
+        
+        Session session = sessionRepository.findByInviteCode(inviteCode.trim())
+            .orElseThrow(() -> new SessionNotFoundException("No active session found with invite code: " + inviteCode));
+        
+        log.info("Found session {} with invite code {}", session.getSessionId(), inviteCode);
+        return sessionMapper.toResponseDTO(session);
     }
 
     //Session Lifecycle Management
-    SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO);
-    SessionResponseDTO resumeSession(UUID sessionId, UUID userId);
-    SessionResponseDTO pauseSession(UUID sessionId, UUID userId);
-    SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime);
+    public SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO){
+
+    }
+    public SessionResponseDTO resumeSession(UUID sessionId, UUID userId){
+
+    }
+    public SessionResponseDTO pauseSession(UUID sessionId, UUID userId){
+
+    }
+    public SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime){
+
+    }
 
     //Participant Management
-    SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId);
-    SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId);
+    public SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId){
+
+    }
+    public SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId){
+
+    }
     SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
     void leaveSession(UUID sessionId, UUID userId);
     List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId);

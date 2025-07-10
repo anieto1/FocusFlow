@@ -79,8 +79,9 @@ Building a collaborative pomodoro web application called Focus Flow with microse
 
 9. **Service Implementation Status**
    - ✅ createSession() - COMPLETED with duration fields, validation, and pomodoro initialization
-   - ❌ updateSession() - needs implementation  
-   - ❌ deleteSession() - needs implementation
+   - ✅ updateSession() - COMPLETED with owner authorization, validation, null-safe partial updates, helper methods
+   - ✅ deleteSession() - COMPLETED with owner authorization, soft delete, business rule validation
+   - ✅ getSessionByInviteCode() - COMPLETED with simplified interface, input sanitization, proper exceptions
 
 ### 🔄 Currently Working On
 **MAJOR ARCHITECTURE OVERHAUL COMPLETED: Removed Scheduled Sessions**
@@ -116,11 +117,10 @@ Building a collaborative pomodoro web application called Focus Flow with microse
    - ✅ Removed `generateInviteCode()` from interface - made private in implementation
 
 **✅ Current Implementation Status (Service Layer):**
-- ✅ **getCurrentActiveSession()** - Implemented with Optional handling
-- ✅ **hasActiveSession()** - Fixed exception handling bug, now properly returns boolean
-- ✅ **getSessionByInviteCode()** - Implemented with validation and error handling
-- ✅ **createSession()** - COMPLETED with duration fields, SessionProperties validation, pomodoro initialization
-- ✅ **generateInviteCode()** - Implemented as private method (removed from interface)
+- ✅ **Core CRUD Operations** - All completed with proper authorization, validation, and error handling
+- ✅ **Session Lookup Methods** - getCurrentActiveSession(), hasActiveSession(), getSessionByInviteCode() all completed
+- ✅ **Helper Methods** - validateOwnership(), validateUpdateRequest(), updateSessionFields(), updateIfNotNull()
+- ✅ **Architecture Cleanup** - Removed user-centric queries, clean service boundaries established
 
 **🔄 Architecture Overhaul Status:**
 - ✅ **Service Boundaries**: Session service now internal-only, user service handles user-facing queries
@@ -128,26 +128,27 @@ Building a collaborative pomodoro web application called Focus Flow with microse
 - ✅ **Removed User Query Methods**: Cleaned up session service to focus on session management only
 
 ### 📋 Next Implementation Tasks
-1. **Complete Core CRUD Operations** (Service-to-Service):
-   - ✅ **createSession()** - COMPLETED with full validation and initialization
-   - ❌ **updateSession()** - needs implementation (owner-only session config changes)
-   - ❌ **deleteSession()** - needs implementation (owner-only)
+1. **Session Lifecycle Management** (Owner-Only):
+   - ❌ **endSession()** - complete session with metrics and final state
+   - ❌ **pauseSession() / resumeSession()** - session state management for breaks
+   - ❌ **extendSession()** - extend session duration dynamically
 
-2. **Session Lifecycle Management** (Owner-Only):
-   - ❌ **endSession()** - complete session with metrics  
-   - ❌ **pauseSession() / resumeSession()** - session state management
-   - ❌ **extendSession()** - extend session duration
+2. **Pomodoro Phase Management** (Owner-Controlled):
+   - ❌ **startWorkPhase()** - transition to work phase, update current state
+   - ❌ **startBreakPhase()** - transition to break phase (short/long selection)
+   - ❌ **completeWorkPhase()** - mark work phase complete, increment counters
+   - ❌ **skipBreak()** - skip break and return to work phase
 
-3. **Pomodoro Phase Management** (Owner-Controlled):
-   - ❌ **startWorkPhase()** - transition to work phase
-   - ❌ **startBreakPhase()** - transition to break phase (short/long)
-   - ❌ **completeWorkPhase()** - mark work phase complete
-   - ❌ **skipBreak()** - skip break and return to work
+3. **Participant Management** (Session Operations):
+   - ❌ **joinSession()** - add user to session via invite code
+   - ❌ **leaveSession()** - remove user from session participants
+   - ❌ **getSessionParticipants()** - list current session participants
+   - ❌ **removeUser()** - owner removes participant (moderation)
 
 4. **Advanced Features** (Lower Priority):
-   - ❌ Add invite code refresh functionality
-   - ❌ Session capacity validation
+   - ❌ Session capacity validation and limits
    - ❌ Enhanced session metrics and analytics
+   - ❌ Invite code refresh functionality
 
 
 ### 🏗️ Architecture Decisions Made
@@ -160,14 +161,14 @@ Building a collaborative pomodoro web application called Focus Flow with microse
 7. **Transaction Strategy**: @Transactional(readOnly = true) for queries, regular @Transactional for writes
 
 ### 🐛 Recent Issues Resolved
-- **@Transactional import error**: Changed from `jakarta.transaction.Transactional` to `org.springframework.transaction.annotation.Transactional` for readOnly support
-- **hasActiveSession() bug**: Fixed exception handling to properly return boolean instead of throwing exceptions
-- **createSession() owner field**: Fixed to use setOwnerUsername() instead of setOwnerUserId() to match entity
-- **generateInviteCode() timing**: Fixed to call before save instead of after, removed sessionId parameter
-- **Pomodoro initialization**: Added proper initialization of all pomodoro fields during session creation
-- **Service boundaries**: Removed all user-specific query methods, cleaned up service responsibilities
+- **CRUD Operations**: Completed all core CRUD with proper authorization, validation, and error handling
+- **Service boundaries**: Removed all user-specific query methods, established clean separation of concerns
 - **Field naming consistency**: Fixed entity-DTO field name mismatches for perfect MapStruct auto-mapping
 - **DTO validation ranges**: Updated all DTOs to match SessionProperties configuration (15-180, 5-10, 15-25)
+- **updateSession architecture**: Refactored to clean helper methods with null-safe partial updates
+- **deleteSession implementation**: Added soft delete, owner authorization, and business rule validation
+- **getSessionByInviteCode simplification**: Removed unnecessary parameters, improved validation and error handling
+- **Helper method architecture**: Created reusable validateOwnership(), validateUpdateRequest(), updateIfNotNull() methods
 
 ### 📁 Key Files Modified
 - `/src/main/resources/db/migration/V2__add_pomodoro_fields.sql` - Pomodoro runtime state fields
@@ -220,10 +221,10 @@ Need to test:
 - Service interface evolution and method lifecycle management
 
 ## Next Session Action Items
-1. **Complete Core CRUD Operations**: Implement updateSession() and deleteSession() (owner-only, service-to-service)
-2. **Session Lifecycle Management**: Implement endSession(), pauseSession(), resumeSession() (owner-controlled)  
-3. **Pomodoro Phase Management**: Implement startWorkPhase(), startBreakPhase(), completeWorkPhase(), skipBreak()
-4. **Testing**: Test the completed createSession() method and new service architecture
+1. **Session Lifecycle Management**: Implement endSession(), pauseSession(), resumeSession() for session state control
+2. **Pomodoro Phase Management**: Implement startWorkPhase(), startBreakPhase(), completeWorkPhase(), skipBreak()
+3. **Participant Management**: Implement joinSession(), leaveSession(), getSessionParticipants() for collaboration
+4. **Testing**: Test completed CRUD operations and session lookup methods
 5. **Integration Planning**: Design gRPC calls for user service integration and Kafka event publishing
 
 ## Quick Resume Commands
