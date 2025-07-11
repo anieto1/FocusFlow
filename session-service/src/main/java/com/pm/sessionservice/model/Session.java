@@ -104,6 +104,9 @@ public class Session {
     @Column(name = "is_waiting_for_break_selection")
     private Boolean isWaitingForBreakSelection = false;
 
+    @Column(name = "total_session_duration_minutes")
+    private Long totalSessionDurationMinutes;
+
     // Task references (task-service manages actual tasks)
     @ElementCollection
     @CollectionTable(name = "session_tasks", joinColumns = @JoinColumn(name = "session_id"))

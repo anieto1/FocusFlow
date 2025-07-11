@@ -4,6 +4,7 @@ import com.pm.sessionservice.model.SessionStatus;
 import com.pm.sessionservice.model.SessionType;
 import lombok.Data;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public class SessionResponseDTO {
     private Integer workDurationMinutes;
     private Integer shortBreakMinutes;
     private Integer longBreakMinutes;
+    private Long totalSessionDurationMinutes;
     private List<UUID> participantIds;
 
 }

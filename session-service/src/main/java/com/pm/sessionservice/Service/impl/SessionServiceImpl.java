@@ -13,6 +13,7 @@ import com.pm.sessionservice.Service.SessionService;
 import com.pm.sessionservice.model.Session;
 import com.pm.sessionservice.model.SessionStatus;
 import com.pm.sessionservice.model.SessionType;
+import org.springframework.cglib.core.Local;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,7 +23,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -226,7 +229,7 @@ public class SessionServiceImpl implements SessionService {
 
     public SessionResponseDTO getSessionByInviteCode(String inviteCode){
         log.info("Looking up session with invite code: {}", inviteCode);
-        
+
         if(inviteCode == null || inviteCode.trim().isEmpty()){
             throw new InvalidSessionDataException("Invite code cannot be null or empty");
         }
@@ -238,15 +241,65 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toResponseDTO(session);
     }
 
-    //Session Lifecycle Management
-    public SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO){
+    private Duration durationTime(LocalDateTime start, LocalDateTime end){
 
+        if(start.isAfter(end)){
+            throw new RuntimeException("start time cannot be after end time");
+        }
+        return Duration.between(start, end);
+    }
+
+    //Session Lifecycle Management
+    @Transactional
+    public SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO){
+        log.info("Ending session {} by user {}", sessionId, userId);
+        
+        // Find session and validate ownership
+        Session session = sessionRepository.findById(sessionId)
+            .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        
+        validateOwnership(session, userId);
+        
+        // Validate session can be ended
+        if (session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.CANCELLED) {
+            throw new InvalidSessionDataException("Session is already completed or cancelled");
+        }
+
+        // Set final session state
+        session.setStatus(SessionStatus.COMPLETED);
+        session.setEndTime(LocalDateTime.now());
+
+        // Calculate total session duration in minutes
+        Duration sessionDuration = durationTime(session.getStartTime(), session.getEndTime());
+        session.setTotalSessionDurationMinutes(sessionDuration.toMinutes());
+
+        Session completedSession = sessionRepository.save(session);
+        log.info("Successfully ended session {} with duration {} minutes", sessionId, sessionDuration.toMinutes());
+        
+        return sessionMapper.toResponseDTO(completedSession);
     }
     public SessionResponseDTO resumeSession(UUID sessionId, UUID userId){
+        //Checks if session exists and if they are the owner
+        log.info("Resuming session {} by user {}", sessionId, userId);
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        validateOwnership(session, userId);
 
+        //Validate if session can be resumed
+        if(session.getStatus() != SessionStatus.PAUSED){
+            throw new InvalidSessionDataException("Session cannot be resumed");
+        }
+
+        //Set final session state
+        session.setStatus(SessionStatus.ACTIVE);
+        session.setCurrentPhaseStartTime(LocalDateTime.now());
+
+
+        Session resumedSession = sessionRepository.save(session);
+        return sessionMapper.toResponseDTO(resumedSession);
     }
     public SessionResponseDTO pauseSession(UUID sessionId, UUID userId){
-
+        log.info("Paused session");
     }
     public SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime){
 
