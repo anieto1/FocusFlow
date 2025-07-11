@@ -25,7 +25,6 @@ public interface SessionService {
     SessionResponseDTO endSession(UUID sessionId, UUID userId, EndSessionRequestDTO endSessionRequestDTO);
     SessionResponseDTO resumeSession(UUID sessionId, UUID userId);
     SessionResponseDTO pauseSession(UUID sessionId, UUID userId);
-    SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime);
 
     //Participant Management
     SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId);

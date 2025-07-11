@@ -69,6 +69,10 @@ public class Session {
     @Column(name = "max_participants")
     private Integer maxParticipants = 10;
 
+    @Min(0)
+    @Column(name = "current_participant_count")
+    private Integer currentParticipantCount = 1;
+
     @Size(max = 500)
     @Column(name = "description")
     private String description;

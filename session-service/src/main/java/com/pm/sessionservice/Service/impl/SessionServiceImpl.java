@@ -299,22 +299,66 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toResponseDTO(resumedSession);
     }
     public SessionResponseDTO pauseSession(UUID sessionId, UUID userId){
-        log.info("Paused session");
-    }
-    public SessionResponseDTO extendSession(UUID sessionId, UUID userId, int addedTime){
+        log.info("Paused session {} by user {}", sessionId, userId);
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        validateOwnership(session, userId);
+
+        //Validate
+        if(session.getStatus() != SessionStatus.ACTIVE){
+            throw new InvalidSessionDataException("Session cannot be paused");
+        }
+
+        //Set final session rate
+        session.setStatus(SessionStatus.PAUSED);
+        session.setCurrentPhaseStartTime(LocalDateTime.now());
+
+        Session pausedSession = sessionRepository.save(session);
+        return sessionMapper.toResponseDTO(pausedSession);
 
     }
 
     //Participant Management
     public SessionResponseDTO inviteUser(UUID sessionId, UUID inviteeId, UUID inviterId){
+        log.info("User {} requesting invite code for session {} to share with {}", inviterId, sessionId,
+                inviteeId);
+
+        // Find session and validate ownership
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+
+        validateOwnership(session, inviterId);
+
+        // Validate session is joinable
+        if (session.getStatus() != SessionStatus.ACTIVE) {
+            throw new InvalidSessionDataException("Cannot invite to non-active session");
+        }
+
+        // Validate capacity - ensure session has room for additional participants
+        if(session.getCurrentParticipantCount() >= session.getMaxParticipants()){
+            throw new InvalidSessionDataException("Session is at maximum capacity (" + 
+                session.getMaxParticipants() + " participants)");
+        }
+
+        log.info("Returning invite code {} for session {}", session.getInviteCode(), sessionId);
+
+        // Return session with invite code - frontend handles sharing
+        return sessionMapper.toResponseDTO(session);
 
     }
     public SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId){
+        log.info("Removing  user {} from session {}", userToRemove, sessionId);
 
     }
-    SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode);
-    void leaveSession(UUID sessionId, UUID userId);
-    List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId);
+    public SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode){
+
+    }
+    public void leaveSession(UUID sessionId, UUID userId){
+
+    }
+    public List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId){
+
+    }
     private String generateInviteCode(){
         return UUID.randomUUID().toString().substring(0, 8);
     }

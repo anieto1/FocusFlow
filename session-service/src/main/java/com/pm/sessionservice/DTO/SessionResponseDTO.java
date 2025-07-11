@@ -29,6 +29,7 @@ public class SessionResponseDTO {
     private LocalDateTime currentPhaseStartTime;
     private Integer totalWorkSessionsCompleted;
     private Integer maxParticipants;
+    private Integer currentParticipantCount;
     private Boolean isDeleted;
     private LocalDateTime updatedAt;
     private Integer workDurationMinutes;
