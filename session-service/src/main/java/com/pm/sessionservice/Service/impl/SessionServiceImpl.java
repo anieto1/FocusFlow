@@ -11,9 +11,7 @@ import com.pm.sessionservice.Mapper.SessionMapper;
 import com.pm.sessionservice.Repository.SessionParticipantRepository;
 import com.pm.sessionservice.Repository.SessionRepository;
 import com.pm.sessionservice.Service.SessionService;
-import com.pm.sessionservice.model.Session;
-import com.pm.sessionservice.model.SessionStatus;
-import com.pm.sessionservice.model.SessionType;
+import com.pm.sessionservice.model.*;
 import org.springframework.cglib.core.Local;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -95,8 +93,7 @@ public class SessionServiceImpl implements SessionService {
         log.info("Updating session {} by owner {}", sessionId, ownerId);
 
         // Find session and validate ownership
-        Session session = sessionRepository.findById(sessionId)
-            .orElseThrow(()->new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
         
         validateOwnership(session, ownerId);
         validateUpdateRequest(request);
@@ -110,67 +107,13 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toResponseDTO(updatedSession);
     }
 
-    private void validateOwnership(Session session, UUID ownerId) {
-        String ownerUsername = getUsernameFromUserId(ownerId);
-        if (!session.getOwnerUsername().equals(ownerUsername)) {
-            throw new SessionAccessDeniedException("Only session owner can update session");
-        }
-    }
-
-    private void validateUpdateRequest(UpdateSessionRequestDTO request) {
-        if (request.getWorkDurationMinutes() != null &&
-                (request.getWorkDurationMinutes() < sessionProperties.getMinWorkDurationMinutes() ||
-                        request.getWorkDurationMinutes() > sessionProperties.getMaxWorkDurationMinutes())) {
-            throw new InvalidSessionDataException("Work duration must be between " +
-                    sessionProperties.getMinWorkDurationMinutes() + "-" +
-                    sessionProperties.getMaxWorkDurationMinutes() + " minutes");
-        }
-        
-        if (request.getShortBreakMinutes() != null &&
-                (request.getShortBreakMinutes() < sessionProperties.getMinShortBreakMinutes() ||
-                        request.getShortBreakMinutes() > sessionProperties.getMaxShortBreakMinutes())) {
-            throw new InvalidSessionDataException("Short break duration must be between " +
-                    sessionProperties.getMinShortBreakMinutes() + "-" +
-                    sessionProperties.getMaxShortBreakMinutes() + " minutes");
-        }
-        
-        if (request.getLongBreakMinutes() != null &&
-                (request.getLongBreakMinutes() < sessionProperties.getMinLongBreakMinutes() ||
-                        request.getLongBreakMinutes() > sessionProperties.getMaxLongBreakMinutes())) {
-            throw new InvalidSessionDataException("Long break duration must be between " +
-                    sessionProperties.getMinLongBreakMinutes() + "-" +
-                    sessionProperties.getMaxLongBreakMinutes() + " minutes");
-        }
-    }
-
-    private void updateSessionFields(Session session, UpdateSessionRequestDTO request) {
-        updateIfNotNull(request.getSessionName(), session::setSessionName);
-        updateIfNotNull(request.getDescription(), session::setDescription);
-        updateIfNotNull(request.getLongBreakMinutes(), session::setLongBreakMinutes);
-        updateIfNotNull(request.getShortBreakMinutes(), session::setShortBreakMinutes);
-        
-        if (request.getWorkDurationMinutes() != null) {
-            session.setWorkDurationMinutes(request.getWorkDurationMinutes());
-            // Update current phase duration if currently in WORK phase
-            if (session.getCurrentType() == SessionType.WORK) {
-                session.setCurrentDurationMinutes(request.getWorkDurationMinutes());
-            }
-        }
-    }
-
-    private <T> void updateIfNotNull(T value, Consumer<T> setter) {
-        if (value != null) {
-            setter.accept(value);
-        }
-    }
 
     @Transactional
     public void deleteSession(UUID sessionId, UUID ownerId){
         log.info("Deleting session {} by owner {}", sessionId, ownerId);
         
         // Find session and validate ownership
-        Session session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
         
         validateOwnership(session, ownerId);
         
@@ -185,31 +128,6 @@ public class SessionServiceImpl implements SessionService {
         log.info("Successfully deleted session {}", sessionId);
     }
     
-    private void validateSessionDeletion(Session session) {
-        // Optional: Add business rules for deletion
-        // For example, you might want to prevent deletion of active sessions
-        // if (session.getStatus() == SessionStatus.ACTIVE) {
-        //     throw new InvalidSessionDataException("Cannot delete active session. End session first.");
-        // }
-        
-        // For now, allow deletion of any session
-        log.debug("Session {} passed deletion validation", session.getSessionId());
-    }
-
-
-
-
-    // New utility methods
-
-    //Placeholder for GRPC
-    private String getUsernameFromUserId(UUID userId) {
-        // TODO: Replace with actual call to user-service
-        // Example: return userServiceClient.getUserById(userId).getUsername();
-
-        // For now, return a placeholder
-        log.warn("Using placeholder username lookup for userId: {}", userId);
-        return "user_" + userId.toString().substring(0, 8);
-    }
 
     public SessionResponseDTO getCurrentActiveSession(UUID userId){
         String username = getUsernameFromUserId(userId);
@@ -243,13 +161,6 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toResponseDTO(session);
     }
 
-    private Duration durationTime(LocalDateTime start, LocalDateTime end){
-
-        if(start.isAfter(end)){
-            throw new RuntimeException("start time cannot be after end time");
-        }
-        return Duration.between(start, end);
-    }
 
     //Session Lifecycle Management
     @Transactional
@@ -257,8 +168,7 @@ public class SessionServiceImpl implements SessionService {
         log.info("Ending session {} by user {}", sessionId, userId);
         
         // Find session and validate ownership
-        Session session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
         
         validateOwnership(session, userId);
         
@@ -283,8 +193,7 @@ public class SessionServiceImpl implements SessionService {
     public SessionResponseDTO resumeSession(UUID sessionId, UUID userId){
         //Checks if session exists and if they are the owner
         log.info("Resuming session {} by user {}", sessionId, userId);
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
         validateOwnership(session, userId);
 
         //Validate if session can be resumed
@@ -302,8 +211,7 @@ public class SessionServiceImpl implements SessionService {
     }
     public SessionResponseDTO pauseSession(UUID sessionId, UUID userId){
         log.info("Paused session {} by user {}", sessionId, userId);
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
         validateOwnership(session, userId);
 
         //Validate
@@ -326,8 +234,7 @@ public class SessionServiceImpl implements SessionService {
                 inviteeId);
 
         // Find session and validate ownership
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
 
         validateOwnership(session, inviterId);
 
@@ -348,10 +255,10 @@ public class SessionServiceImpl implements SessionService {
         return sessionMapper.toResponseDTO(session);
 
     }
+    @Transactional
     public SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId){
         log.info("Removing  user {} from session {}", userToRemove, sessionId);
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(()-> new SessionNotFoundException("Session not found"));
+        Session session = findSessionOrThrow(sessionId);
 
         //Validation
         validateOwnership(session, ownerId);
@@ -368,22 +275,59 @@ public class SessionServiceImpl implements SessionService {
             throw new InvalidSessionDataException("User is not a participant in session");
         }
 
+        sessionParticipantRepository.removeParticipantFromSession(sessionId, userToRemove, LocalDateTime.now());
+        session.setCurrentParticipantCount(session.getCurrentParticipantCount()-1);
 
+        Session removedUserSession = sessionRepository.save(session);
 
-
+        return sessionMapper.toResponseDTO(removedUserSession);
 
     }
-    public SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode){
 
+    @Transactional
+    public SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode){
+        log.info("Joining session {} by user {}", sessionId, userId);
+        //Null checks, invite code cleaning, and session availability
+        if(sessionId == null || userId == null || inviteCode == null) {
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+        String trimmedInviteCode = inviteCode.trim();
+        Session session = findSessionOrThrow(sessionId);
+
+        //Validating invite codes match
+        if(!trimmedInviteCode.equalsIgnoreCase(session.getInviteCode())){
+            throw new InvalidSessionDataException("Invite code is invalid");
+        }
+        //checks if session status is active
+        if(!session.getStatus().equals(SessionStatus.ACTIVE)){
+            throw new InvalidSessionDataException("Session is not active");
+        }
+
+        if(sessionParticipantRepository.isUserActiveParticipant(sessionId, userId)){
+            throw new InvalidSessionDataException("User is already a participant in session");
+        }
+
+        if(sessionParticipantRepository.countActiveParticipantsBySessionId(sessionId) > sessionProperties.getMaxAllowedParticipants()){
+            throw new SessionAccessDeniedException("Max allowed participants exceeded");
+        }
+        //TODO: Ensure user exists via gRPC call to user service
+
+        // Create and save participant
+        SessionParticipant participant = createParticipant(sessionId, userId);
+        sessionParticipantRepository.save(participant);
+        
+        // Update session participant count
+        session.setCurrentParticipantCount(session.getCurrentParticipantCount() + 1);
+        Session updatedSession = sessionRepository.save(session);
+        
+        log.info("User {} successfully joined session {}", userId, sessionId);
+        return sessionMapper.toResponseDTO(updatedSession);
     }
     public void leaveSession(UUID sessionId, UUID userId){
 
     }
     public List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId){
 
-    }
-    private String generateInviteCode(){
-        return UUID.randomUUID().toString().substring(0, 8);
     }
 
     //Permission and Access control
@@ -411,5 +355,114 @@ public class SessionServiceImpl implements SessionService {
     List<UUID> getSessionTasks(UUID sessionId, UUID userId);
 
 
+    //Helper methods
+    
+    // Session lookup and validation helpers
+    private Session findSessionOrThrow(UUID sessionId){
+        return sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionNotFoundException("Session not found"));
+    }
+    
+    private void validateOwnership(Session session, UUID ownerId) {
+        String ownerUsername = getUsernameFromUserId(ownerId);
+        if (!session.getOwnerUsername().equals(ownerUsername)) {
+            throw new SessionAccessDeniedException("Only session owner can update session");
+        }
+    }
+    
+    private void validateSessionDeletion(Session session) {
+        // Optional: Add business rules for deletion
+        // For example, you might want to prevent deletion of active sessions
+        // if (session.getStatus() == SessionStatus.ACTIVE) {
+        //     throw new InvalidSessionDataException("Cannot delete active session. End session first.");
+        // }
+        
+        // For now, allow deletion of any session
+        log.debug("Session {} passed deletion validation", session.getSessionId());
+    }
+    
+    // Update request validation helpers
+    private void validateUpdateRequest(UpdateSessionRequestDTO request) {
+        if (request.getWorkDurationMinutes() != null &&
+                (request.getWorkDurationMinutes() < sessionProperties.getMinWorkDurationMinutes() ||
+                        request.getWorkDurationMinutes() > sessionProperties.getMaxWorkDurationMinutes())) {
+            throw new InvalidSessionDataException("Work duration must be between " +
+                    sessionProperties.getMinWorkDurationMinutes() + "-" +
+                    sessionProperties.getMaxWorkDurationMinutes() + " minutes");
+        }
+        
+        if (request.getShortBreakMinutes() != null &&
+                (request.getShortBreakMinutes() < sessionProperties.getMinShortBreakMinutes() ||
+                        request.getShortBreakMinutes() > sessionProperties.getMaxShortBreakMinutes())) {
+            throw new InvalidSessionDataException("Short break duration must be between " +
+                    sessionProperties.getMinShortBreakMinutes() + "-" +
+                    sessionProperties.getMaxShortBreakMinutes() + " minutes");
+        }
+        
+        if (request.getLongBreakMinutes() != null &&
+                (request.getLongBreakMinutes() < sessionProperties.getMinLongBreakMinutes() ||
+                        request.getLongBreakMinutes() > sessionProperties.getMaxLongBreakMinutes())) {
+            throw new InvalidSessionDataException("Long break duration must be between " +
+                    sessionProperties.getMinLongBreakMinutes() + "-" +
+                    sessionProperties.getMaxLongBreakMinutes() + " minutes");
+        }
+    }
+    
+    // Session field update helpers
+    private void updateSessionFields(Session session, UpdateSessionRequestDTO request) {
+        updateIfNotNull(request.getSessionName(), session::setSessionName);
+        updateIfNotNull(request.getDescription(), session::setDescription);
+        updateIfNotNull(request.getLongBreakMinutes(), session::setLongBreakMinutes);
+        updateIfNotNull(request.getShortBreakMinutes(), session::setShortBreakMinutes);
+        
+        if (request.getWorkDurationMinutes() != null) {
+            session.setWorkDurationMinutes(request.getWorkDurationMinutes());
+            // Update current phase duration if currently in WORK phase
+            if (session.getCurrentType() == SessionType.WORK) {
+                session.setCurrentDurationMinutes(request.getWorkDurationMinutes());
+            }
+        }
+    }
+    
+    private <T> void updateIfNotNull(T value, Consumer<T> setter) {
+        if (value != null) {
+            setter.accept(value);
+        }
+    }
+    
+    // Utility and integration helpers
+    private String getUsernameFromUserId(UUID userId) {
+        // TODO: Replace with actual call to user-service
+        // Example: return userServiceClient.getUserById(userId).getUsername();
+
+        // For now, return a placeholder
+        log.warn("Using placeholder username lookup for userId: {}", userId);
+        return "user_" + userId.toString().substring(0, 8);
+    }
+    
+    private Duration durationTime(LocalDateTime start, LocalDateTime end){
+        if(start.isAfter(end)){
+            throw new RuntimeException("start time cannot be after end time");
+        }
+        return Duration.between(start, end);
+    }
+    
+    private String generateInviteCode(){
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+    
+    private SessionParticipant createParticipant(UUID sessionId, UUID userId) {
+        SessionParticipant participant = new SessionParticipant();
+        participant.setSessionId(sessionId);
+        participant.setUserId(userId);
+        participant.setJoinedAt(LocalDateTime.now());
+        participant.setRole(ParticipantRole.PARTICIPANT);
+        participant.setIsActive(true);
+        participant.setCurrentSessionStartTime(LocalDateTime.now());
+        participant.setIsCurrentlyInSession(true);
+        participant.setTotalSessionTimeMinutes(0);
+        participant.setWorkSessionsParticipated(0);
+        return participant;
+    }
 
 }
