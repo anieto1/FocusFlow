@@ -129,8 +129,8 @@ Building a collaborative pomodoro web application called Focus Flow with microse
 
 ### 📋 Next Implementation Tasks
 1. **Session Lifecycle Management** (Owner-Only):
-   - ❌ **endSession()** - complete session with metrics and final state
-   - ❌ **pauseSession() / resumeSession()** - session state management for breaks
+   - ✅ **endSession()** - complete session with metrics and final state
+   - ✅ **pauseSession() / resumeSession()** - session state management for breaks
    - ❌ **extendSession()** - extend session duration dynamically
 
 2. **Pomodoro Phase Management** (Owner-Controlled):
@@ -140,15 +140,164 @@ Building a collaborative pomodoro web application called Focus Flow with microse
    - ❌ **skipBreak()** - skip break and return to work phase
 
 3. **Participant Management** (Session Operations):
+   - 🔄 **removeUser()** - owner removes participant (moderation) - PARTIALLY IMPLEMENTED
    - ❌ **joinSession()** - add user to session via invite code
    - ❌ **leaveSession()** - remove user from session participants
    - ❌ **getSessionParticipants()** - list current session participants
-   - ❌ **removeUser()** - owner removes participant (moderation)
 
 4. **Advanced Features** (Lower Priority):
    - ❌ Session capacity validation and limits
    - ❌ Enhanced session metrics and analytics
    - ❌ Invite code refresh functionality
+
+### 🔧 Detailed Implementation Steps for Participant Management
+
+#### **1. Complete `removeUser` Method**
+**Current Status**: Validation completed, execution logic needed
+
+**Steps to Complete**:
+1. ✅ Add repository dependency injection
+2. ✅ Fix broken method signature and validation
+3. ❌ **Execute Removal**:
+   - Call `sessionParticipantRepository.removeParticipantFromSession(sessionId, userToRemove, LocalDateTime.now())`
+   - Update session's `currentParticipantCount` (decrement by 1)
+   - Save updated session
+4. ❌ **Error Handling & Return**:
+   - Handle case where removal fails
+   - Add success logging
+   - Return updated session using `sessionMapper.toResponseDTO()`
+5. ❌ **Add @Transactional annotation**
+
+#### **2. `joinSession` Method Implementation**
+**Steps**:
+1. **Input Validation**
+   - Validate `sessionId`, `userId`, and `inviteCode` are not null/empty
+   - Sanitize invite code (trim whitespace)
+   - Log join attempt
+
+2. **Session Lookup & Invite Code Validation**
+   - Find session by ID
+   - Verify invite code matches session's invite code
+   - Check session status is ACTIVE
+
+3. **Business Rule Validation**
+   - Verify user is not already a participant (`sessionParticipantRepository.isUserActiveParticipant()`)
+   - Check session capacity using `sessionParticipantRepository.countActiveParticipantsBySessionId()`
+   - Ensure user exists (future gRPC call to user service)
+
+4. **Execute Join**
+   - Create new `SessionParticipant` entity
+   - Set `joinedAt = LocalDateTime.now()`, `role = PARTICIPANT`, `isActive = true`
+   - Save participant using repository
+   - Update session's `currentParticipantCount` (increment by 1)
+
+5. **Error Handling & Return**
+   - Handle duplicate participant exception
+   - Handle capacity exceeded exception
+   - Return updated session DTO
+   - Add @Transactional annotation
+
+#### **3. `leaveSession` Method Implementation**
+**Steps**:
+1. **Input Validation**
+   - Validate `sessionId` and `userId` are not null
+   - Log user leave attempt
+
+2. **Session Lookup & User Validation**
+   - Find session by ID
+   - Verify user is actually a participant (`sessionParticipantRepository.isUserActiveParticipant()`)
+   - Ensure user is NOT the session owner (owners must delete session instead)
+
+3. **Business Rule Validation**
+   - Check session allows leaving (could add business rules for locked sessions)
+   - Verify user is currently active in session
+
+4. **Execute Leave**
+   - Call `sessionParticipantRepository.removeParticipantFromSession(sessionId, userId, LocalDateTime.now())`
+   - Update session's `currentParticipantCount` (decrement by 1)
+   - Save updated session
+
+5. **Error Handling**
+   - Handle "user not in session" case
+   - Handle "owner cannot leave" case
+   - Add @Transactional annotation
+   - No return value (void method)
+
+#### **4. `getSessionParticipants` Method Implementation**
+**Steps**:
+1. **Input Validation & Authorization**
+   - Validate `sessionId` and `requesterId` are not null
+   - Find session by ID
+   - Verify requester is either session owner OR active participant
+
+2. **Access Control Logic**
+   - If requester is owner: full access
+   - If requester is participant: limited access (business decision)
+   - If neither: throw `SessionAccessDeniedException`
+
+3. **Retrieve Participants**
+   - Call `sessionParticipantRepository.findActiveParticipantUserIds(sessionId)`
+   - Returns `List<UUID>` of participant user IDs
+
+4. **Future Integration Point**
+   - Add TODO comment for user service integration
+   - Could return user details via gRPC batch call
+   - For now, return just the UUID list
+
+5. **Error Handling & Return**
+   - Handle empty participant list (valid case)
+   - Return list of participant UUIDs
+   - Add @Transactional(readOnly = true) annotation
+
+#### **5. Missing Access Control Methods**
+
+**`isUserSessionOwner` Method**:
+1. **Input Validation**
+   - Validate `sessionId` and `userId` are not null
+
+2. **Implementation**
+   - Find session by ID
+   - Get username from userId (existing helper method)
+   - Compare with session's `ownerUsername`
+   - Return boolean result
+
+3. **Error Handling**
+   - Return false if session not found (vs throwing exception)
+   - Handle user service lookup failures
+
+**`canUserJoinSession` Method**:
+1. **Input Validation**
+   - Validate all parameters are not null
+
+2. **Validation Checks**
+   - Verify session exists and is ACTIVE
+   - Check invite code matches
+   - Verify user is not already a participant
+   - Check session capacity
+   - Verify user exists (future gRPC call)
+
+3. **Return Logic**
+   - Return true only if ALL conditions pass
+   - Return false for any failure (no exceptions)
+
+**`validateSessionCapacity` Method**:
+1. **Get Current Count**
+   - Use `sessionParticipantRepository.countActiveParticipantsBySessionId()`
+
+2. **Capacity Check**
+   - Compare against session's `maxParticipants`
+   - Throw `InvalidSessionDataException` if at/over capacity
+
+3. **Parameters**
+   - `sessionId` and `additionalParticipants` (usually 1)
+
+### 🔄 **Common Patterns Across All Methods**:
+1. **Transaction Management**: Add `@Transactional` for write operations, `@Transactional(readOnly = true)` for reads
+2. **Logging**: INFO for successful operations, WARN for business rule violations
+3. **Null Safety**: Validate all inputs at method entry
+4. **Error Messages**: Descriptive, user-friendly exception messages
+5. **Consistency**: Keep `currentParticipantCount` in sync with actual participants
+6. **Future Integration**: TODO comments for user service gRPC calls
 
 
 ### 🏗️ Architecture Decisions Made

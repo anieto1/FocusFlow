@@ -8,6 +8,7 @@ import com.pm.sessionservice.Exception.SessionAccessDeniedException;
 import com.pm.sessionservice.Exception.SessionException;
 import com.pm.sessionservice.Exception.SessionNotFoundException;
 import com.pm.sessionservice.Mapper.SessionMapper;
+import com.pm.sessionservice.Repository.SessionParticipantRepository;
 import com.pm.sessionservice.Repository.SessionRepository;
 import com.pm.sessionservice.Service.SessionService;
 import com.pm.sessionservice.model.Session;
@@ -37,6 +38,7 @@ import java.util.function.Consumer;
 public class SessionServiceImpl implements SessionService {
     private static final Logger log = LoggerFactory.getLogger(SessionServiceImpl.class);
     private final SessionRepository sessionRepository;
+    private final SessionParticipantRepository sessionParticipantRepository;
     private final SessionProperties sessionProperties;
     private final SessionMapper sessionMapper;
 
@@ -348,6 +350,27 @@ public class SessionServiceImpl implements SessionService {
     }
     public SessionResponseDTO removeUser(UUID sessionId, UUID userToRemove, UUID ownerId){
         log.info("Removing  user {} from session {}", userToRemove, sessionId);
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(()-> new SessionNotFoundException("Session not found"));
+
+        //Validation
+        validateOwnership(session, ownerId);
+
+        if(session.getStatus() != SessionStatus.ACTIVE){
+            throw new InvalidSessionDataException("Session is not active");
+        }
+
+        if(userToRemove == null){
+            throw new InvalidSessionDataException("User to remove is empty");
+        }
+
+        if(!sessionParticipantRepository.isUserActiveParticipant(sessionId, userToRemove)){
+            throw new InvalidSessionDataException("User is not a participant in session");
+        }
+
+
+
+
 
     }
     public SessionResponseDTO joinSession(UUID sessionId, UUID userId, String inviteCode){
@@ -364,7 +387,9 @@ public class SessionServiceImpl implements SessionService {
     }
 
     //Permission and Access control
-    boolean isUserSessionOwner(UUID sessionId, UUID userId);
+    public boolean isUserSessionOwner(UUID sessionId, UUID userId){
+
+    }
     boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
 
 
