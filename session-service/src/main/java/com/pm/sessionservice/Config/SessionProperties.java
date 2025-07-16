@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "session")
 public class SessionProperties {
     private final int maxAllowedParticipants = 10;
+    private final int minAllowedParticipants = 1;
 
     //Work block config
     private final int minWorkDurationMinutes = 15;

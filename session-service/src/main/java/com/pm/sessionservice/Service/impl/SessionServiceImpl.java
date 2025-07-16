@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -323,18 +324,89 @@ public class SessionServiceImpl implements SessionService {
         log.info("User {} successfully joined session {}", userId, sessionId);
         return sessionMapper.toResponseDTO(updatedSession);
     }
+    @Transactional
     public void leaveSession(UUID sessionId, UUID userId){
+        //Null checker and session finder
+        log.info("User {} is leaving session {}", userId, sessionId);
+        if(sessionId ==null || userId == null){
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+        Session session = findSessionOrThrow(sessionId);
 
+        //Validation
+        if(!session.getStatus().equals(SessionStatus.ACTIVE)){
+            throw new InvalidSessionDataException("Session is not active");
+        }
+
+        // Prevent owner from leaving (they should delete session instead)
+        if(getUsernameFromUserId(userId).equals(session.getOwnerUsername())){
+            throw new SessionAccessDeniedException("Session owner cannot leave - delete session instead");
+        }
+
+        if(!sessionParticipantRepository.isUserActiveParticipant(sessionId, userId)){
+            throw new InvalidSessionDataException("User is not a participant in session");
+        }
+        
+        // Check if leaving would go below minimum participants
+        if(sessionParticipantRepository.countActiveParticipantsBySessionId(sessionId) <= sessionProperties.getMinAllowedParticipants()){
+            throw new SessionAccessDeniedException("Cannot leave session - would go below minimum required participants");
+        }
+
+        sessionParticipantRepository.removeParticipantFromSession(sessionId, userId, LocalDateTime.now());
+        session.setCurrentParticipantCount(session.getCurrentParticipantCount() - 1);
+        sessionRepository.save(session);
+        
+        log.info("User {} successfully left session {}", userId, sessionId);
     }
+    @Transactional(readOnly = true)
     public List<UUID> getSessionParticipants(UUID sessionId, UUID requesterId){
+        log.info("Getting participants for session {} requested by user {}", sessionId, requesterId);
+        if(sessionId == null || requesterId == null){
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        String requesterUsername = getUsernameFromUserId(requesterId);
+        
+        // Check if requester is either session owner OR active participant
+        boolean isOwner = session.getOwnerUsername().equals(requesterUsername);
+        boolean isParticipant = sessionParticipantRepository.isUserActiveParticipant(sessionId, requesterId);
+        
+        if(!isOwner && !isParticipant){
+            throw new SessionAccessDeniedException("Access denied - user must be session owner or participant");
+        }
 
+        List<UUID> participantIds = sessionParticipantRepository.findActiveParticipantUserIds(sessionId);
+        log.info("Found {} participants in session {}", participantIds.size(), sessionId);
+        
+        return participantIds;
     }
 
     //Permission and Access control
     public boolean isUserSessionOwner(UUID sessionId, UUID userId){
+        log.info("Checking if user {} is owner of session {}", userId, sessionId);
+        
+        if(sessionId == null || userId == null){
+            return false;
+        }
+        
+        try {
+            Session session = findSessionOrThrow(sessionId);
+            String userUsername = getUsernameFromUserId(userId);
+            boolean isOwner = session.getOwnerUsername().equals(userUsername);
+            
+            log.debug("User {} ownership check for session {}: {}", userId, sessionId, isOwner);
+            return isOwner;
+        } catch (Exception e) {
+            log.warn("Error checking ownership for user {} and session {}: {}", userId, sessionId, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode){
+        log.info("Checking if user {} can join session {}", userId, sessionId);
 
     }
-    boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode);
 
 
     // Validation & Business Rules
