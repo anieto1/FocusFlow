@@ -405,26 +405,126 @@ public class SessionServiceImpl implements SessionService {
 
     public boolean canUserJoinSession(UUID sessionId, UUID userId, String inviteCode){
         log.info("Checking if user {} can join session {}", userId, sessionId);
+        if(userId == null || sessionId == null || inviteCode == null){
+            return false;
+        }
+        
+        try {
+            String cleanInviteCode = inviteCode.trim();
+            Session session = findSessionOrThrow(sessionId);
 
+            if(!session.getStatus().equals(SessionStatus.ACTIVE)){
+                return false;
+            }
+
+            if(sessionParticipantRepository.isUserActiveParticipant(sessionId, userId)){
+                return false;
+            }
+
+            // Check if session has capacity for 1 additional participant
+            validateSessionCapacity(sessionId, 1);
+
+            return session.getInviteCode().equalsIgnoreCase(cleanInviteCode);
+        } catch (Exception e) {
+            log.debug("User {} cannot join session {} due to: {}", userId, sessionId, e.getMessage());
+            return false;
+        }
     }
 
 
     // Validation & Business Rules
-    void validateSessionCapacity(UUID sessionId, int additionalParticipants);
+    public void validateSessionCapacity(UUID sessionId, int additionalParticipants){
+        Session session = findSessionOrThrow(sessionId);
+        int currentCount = session.getCurrentParticipantCount();
+        
+        if(currentCount + additionalParticipants > session.getMaxParticipants()){
+            throw new InvalidSessionDataException("Session is at maximum capacity (" + 
+                session.getMaxParticipants() + " participants). Cannot add " + additionalParticipants + " more.");
+        }
+    }
 
     //Pomodoro Phase Management
-    SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId);
-    SessionResponseDTO startBreakPhase(UUID sessionId, UUID userId, SessionType breakType);
-    SessionResponseDTO completeWorkPhase(UUID sessionId, UUID userId);
-    SessionResponseDTO skipBreak(UUID sessionId, UUID userId);
-    SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId);
-    BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId);
+    public SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId){
+        log.info("Starting work phase for session {}", sessionId);
+        if(sessionId == null || userId == null){
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+        Session session = findSessionOrThrow(sessionId);
+        validateOwnership(session, userId);
+        if(!session.getStatus().equals(SessionStatus.ACTIVE)){
+            throw new InvalidSessionDataException("Session is not active");
+        }
+        session.setCurrentType(SessionType.WORK);
+        session.setCurrentPhaseStartTime(LocalDateTime.now());
+        session.setCurrentDurationMinutes(session.getWorkDurationMinutes());
+        Session savedSession = sessionRepository.save(session);
+        return sessionMapper.toResponseDTO(savedSession);
+    }
+
+    @Transactional
+    public SessionResponseDTO startBreakPhase(UUID sessionId, UUID userId, SessionType breakType){
+        log.info("Starting break phase for session {} with type {}", sessionId, breakType);
+        
+        // Input validation
+        if(sessionId == null || userId == null || breakType == null){
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        validateOwnership(session, userId);
+        
+        if(!session.getStatus().equals(SessionStatus.ACTIVE)){
+            throw new InvalidSessionDataException("Session is not active");
+        }
+        
+        // Validate breakType is actually a break type
+        if(breakType != SessionType.SHORT_BREAK && breakType != SessionType.LONG_BREAK) {
+            throw new InvalidSessionDataException("Invalid break type. Must be SHORT_BREAK or LONG_BREAK");
+        }
+        
+        // Set duration based on break type
+        int breakDuration = (breakType == SessionType.SHORT_BREAK) 
+            ? session.getShortBreakMinutes() 
+            : session.getLongBreakMinutes();
+        
+        session.setCurrentType(breakType);
+        session.setCurrentPhaseStartTime(LocalDateTime.now());
+        session.setCurrentDurationMinutes(breakDuration);
+        
+        Session savedSession = sessionRepository.save(session);
+        log.info("Successfully started {} for session {} with duration {} minutes", 
+                breakType, sessionId, breakDuration);
+        
+        return sessionMapper.toResponseDTO(savedSession);
+    }
+    @Transactional
+    public SessionResponseDTO completeWorkPhase(UUID sessionId, UUID userId){
+        log.info("Completing work phase for session {}", sessionId);
+        if(sessionId == null || userId == null){
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+
+        Session session = findSessionOrThrow(sessionId);
+        validateOwnership(session, userId);
+
+        //Increments total work session completed
+        session.setTotalWorkSessionsCompleted(session.getTotalWorkSessionsCompleted()+1);
+
+        log.info("Starting work phase selected by owner");
+        startWorkPhase(sessionId, userId);
+
+        Session savedSession = sessionRepository.save(session);
+        return sessionMapper.toResponseDTO(savedSession);
+    }
+    public SessionResponseDTO skipBreak(UUID sessionId, UUID userId);
+    public SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId);
+    public BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId);
 
     //Task Management within Sessions
-    SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId);
-    SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId);
-    SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId);
-    List<UUID> getSessionTasks(UUID sessionId, UUID userId);
+    public SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId);
+    public SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId);
+    public SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId);
+    public List<UUID> getSessionTasks(UUID sessionId, UUID userId);
 
 
     //Helper methods
