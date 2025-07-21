@@ -12,24 +12,15 @@ import com.pm.sessionservice.Repository.SessionParticipantRepository;
 import com.pm.sessionservice.Repository.SessionRepository;
 import com.pm.sessionservice.Service.SessionService;
 import com.pm.sessionservice.model.*;
-import org.springframework.cglib.core.Local;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.*;
 
 
 @RequiredArgsConstructor
@@ -191,6 +182,7 @@ public class SessionServiceImpl implements SessionService {
         
         return sessionMapper.toResponseDTO(completedSession);
     }
+    @Transactional
     public SessionResponseDTO resumeSession(UUID sessionId, UUID userId){
         //Checks if session exists and if they are the owner
         log.info("Resuming session {} by user {}", sessionId, userId);
@@ -210,6 +202,7 @@ public class SessionServiceImpl implements SessionService {
         Session resumedSession = sessionRepository.save(session);
         return sessionMapper.toResponseDTO(resumedSession);
     }
+    @Transactional
     public SessionResponseDTO pauseSession(UUID sessionId, UUID userId){
         log.info("Paused session {} by user {}", sessionId, userId);
         Session session = findSessionOrThrow(sessionId);
@@ -444,6 +437,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     //Pomodoro Phase Management
+    @Transactional
     public SessionResponseDTO startWorkPhase(UUID sessionId, UUID userId){
         log.info("Starting work phase for session {}", sessionId);
         if(sessionId == null || userId == null){
@@ -509,22 +503,227 @@ public class SessionServiceImpl implements SessionService {
 
         //Increments total work session completed
         session.setTotalWorkSessionsCompleted(session.getTotalWorkSessionsCompleted()+1);
+        
+        // Save the completed work session count first
+        sessionRepository.save(session);
 
-        log.info("Starting work phase selected by owner");
-        startWorkPhase(sessionId, userId);
-
-        Session savedSession = sessionRepository.save(session);
-        return sessionMapper.toResponseDTO(savedSession);
+        log.info("Work phase completed, starting new work phase for session {}", sessionId);
+        // Start new work phase (this method already saves and returns the DTO)
+        return startWorkPhase(sessionId, userId);
     }
-    public SessionResponseDTO skipBreak(UUID sessionId, UUID userId);
-    public SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId);
-    public BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId);
+    @Transactional
+    public SessionResponseDTO skipBreak(UUID sessionId, UUID userId){
+        log.info("Skipping break phase for session {}", sessionId);
+        
+        // Input validation
+        if(sessionId == null || userId == null){
+            throw new InvalidSessionDataException("One or more required fields are empty");
+        }
+
+        Session session = findSessionOrThrow(sessionId);
+        validateOwnership(session, userId);
+
+        log.info("Break phase skipped, starting work phase for session {}", sessionId);
+        // Start work phase (this method already saves and returns the DTO)
+        return startWorkPhase(sessionId, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public SessionProgressDTO getSessionProgress(UUID sessionId, UUID userId){
+        log.info("Getting session progress for session {}", sessionId);
+        
+        // Input validation
+        if (sessionId == null || userId == null) {
+            throw new InvalidSessionDataException("Session ID and User ID cannot be null");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+
+        // Access control - owner OR participant can view progress
+        boolean isOwner = isUserSessionOwner(sessionId, userId);
+        boolean isUserParticipant = sessionParticipantRepository.isUserActiveParticipant(sessionId, userId);
+
+        if(!isOwner && !isUserParticipant){
+            throw new SessionAccessDeniedException("Access denied: User must be owner or session participant");
+        }
+
+        // Use MapStruct for basic field mapping, then add calculated fields
+        SessionProgressDTO progress = sessionMapper.toProgressDTO(session);
+        
+        // Add calculated fields that require business logic
+        progress.setElapsedTime(calculateTotalElapsedTime(session));
+        progress.setTimeRemainingInPhase(calculateTimeRemainingInPhase(session));
+        
+        // Task progress using helper methods
+        List<UUID> taskIds = session.getTaskIds();
+        progress.setTotalTasks(taskIds != null ? taskIds.size() : 0);
+        progress.setTasksCompleted(calculateCompletedTasksCount(taskIds));
+        progress.setCompletedTaskIds(new ArrayList<>()); // TODO: Get from task service via gRPC
+        
+        // Participant info using helper methods
+        progress.setActiveParticipants(getActiveParticipantIds(sessionId));
+        
+        // Break selection status using helper methods
+        progress.setIsWaitingForBreakSelection(isWaitingForBreakSelection(session));
+        
+        log.info("Successfully retrieved progress for session {} - {} elapsed, {} remaining in phase", 
+                sessionId, progress.getElapsedTime(), progress.getTimeRemainingInPhase());
+        
+        return progress;
+    }
+    @Transactional(readOnly = true)
+    public BreakSessionDTO getBreakOptions(UUID sessionId, UUID userId){
+        log.info("Getting break options for session {} by user {}", sessionId, userId);
+        
+        // Input validation
+        if (sessionId == null || userId == null) {
+            throw new InvalidSessionDataException("Session ID and User ID cannot be null");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        
+        // Access control - owner OR participant can view break options
+        boolean isOwner = isUserSessionOwner(sessionId, userId);
+        boolean isUserParticipant = sessionParticipantRepository.isUserActiveParticipant(sessionId, userId);
+
+        if(!isOwner && !isUserParticipant){
+            throw new SessionAccessDeniedException("Access denied: User must be owner or session participant");
+        }
+        
+        // Use MapStruct for basic field mapping, then add calculated fields
+        BreakSessionDTO breakOptions = sessionMapper.toBreakSessionDTO(session);
+        
+        // Add calculated fields that require business logic
+        List<UUID> taskIds = session.getTaskIds();
+        breakOptions.setTasks(taskIds != null ? taskIds.size() : 0);
+        breakOptions.setTimeRemaining(calculateTimeRemainingInPhase(session));
+        
+        log.info("Break options retrieved for session {} - {} work sessions completed", 
+                sessionId, breakOptions.getWorkSessionsCompleted());
+        
+        return breakOptions;
+    }
 
     //Task Management within Sessions
-    public SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId);
-    public SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId);
-    public SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId);
-    public List<UUID> getSessionTasks(UUID sessionId, UUID userId);
+    @Transactional
+    public SessionResponseDTO addTaskToSession(UUID sessionId, UUID taskId, UUID userId){
+        log.info("Adding task {} to session {} by user {}", taskId, sessionId, userId);
+        
+        // Input validation
+        if (sessionId == null || taskId == null || userId == null) {
+            throw new InvalidSessionDataException("Session ID, Task ID, and User ID cannot be null");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        validateOwnership(session, userId); // Only owners can manage tasks
+        
+        // Check if task is already in session
+        List<UUID> taskIds = session.getTaskIds();
+        if (taskIds.contains(taskId)) {
+            throw new InvalidSessionDataException("Task is already associated with this session");
+        }
+        
+        // TODO: Validate task exists via gRPC call to task service
+        // Example: taskServiceClient.validateTaskExists(taskId, userId);
+        
+        // Add task to session
+        taskIds.add(taskId);
+        session.setTaskIds(taskIds);
+        
+        Session updatedSession = sessionRepository.save(session);
+        log.info("Successfully added task {} to session {}", taskId, sessionId);
+        
+        return sessionMapper.toResponseDTO(updatedSession);
+    }
+    
+    @Transactional
+    public SessionResponseDTO removeTaskFromSession(UUID sessionId, UUID taskId, UUID userId){
+        log.info("Removing task {} from session {} by user {}", taskId, sessionId, userId);
+        
+        // Input validation
+        if (sessionId == null || taskId == null || userId == null) {
+            throw new InvalidSessionDataException("Session ID, Task ID, and User ID cannot be null");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        validateOwnership(session, userId); // Only owners can manage tasks
+        
+        // Check if task is in session
+        List<UUID> taskIds = session.getTaskIds();
+        if (!taskIds.contains(taskId)) {
+            throw new InvalidSessionDataException("Task is not associated with this session");
+        }
+        
+        // Remove task from session
+        taskIds.remove(taskId);
+        session.setTaskIds(taskIds);
+        
+        Session updatedSession = sessionRepository.save(session);
+        log.info("Successfully removed task {} from session {}", taskId, sessionId);
+        
+        return sessionMapper.toResponseDTO(updatedSession);
+    }
+    
+    @Transactional
+    public SessionResponseDTO markTaskCompleted(UUID sessionId, UUID taskId, UUID userId){
+        log.info("Marking task {} as completed in session {} by user {}", taskId, sessionId, userId);
+        
+        // Input validation
+        if (sessionId == null || taskId == null || userId == null) {
+            throw new InvalidSessionDataException("Session ID, Task ID, and User ID cannot be null");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        
+        // Access control - owner OR participant can complete tasks
+        boolean isOwner = isUserSessionOwner(sessionId, userId);
+        boolean isUserParticipant = sessionParticipantRepository.isUserActiveParticipant(sessionId, userId);
+
+        if(!isOwner && !isUserParticipant){
+            throw new SessionAccessDeniedException("Access denied: User must be owner or session participant");
+        }
+        
+        // Check if task is in session
+        List<UUID> taskIds = session.getTaskIds();
+        if (!taskIds.contains(taskId)) {
+            throw new InvalidSessionDataException("Task is not associated with this session");
+        }
+        
+        // TODO: Mark task as completed via gRPC call to task service
+        // Example: taskServiceClient.markTaskCompleted(taskId, userId);
+        log.info("Task completion will be handled by task service via gRPC - session association maintained");
+        
+        // Session doesn't change - task completion is handled by task service
+        // We just validate that the task belongs to this session
+        log.info("Task {} completion request validated for session {}", taskId, sessionId);
+        
+        return sessionMapper.toResponseDTO(session);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<UUID> getSessionTasks(UUID sessionId, UUID userId){
+        log.info("Getting tasks for session {} by user {}", sessionId, userId);
+        
+        // Input validation
+        if (sessionId == null || userId == null) {
+            throw new InvalidSessionDataException("Session ID and User ID cannot be null");
+        }
+        
+        Session session = findSessionOrThrow(sessionId);
+        
+        // Access control - owner OR participant can view tasks
+        boolean isOwner = isUserSessionOwner(sessionId, userId);
+        boolean isUserParticipant = sessionParticipantRepository.isUserActiveParticipant(sessionId, userId);
+
+        if(!isOwner && !isUserParticipant){
+            throw new SessionAccessDeniedException("Access denied: User must be owner or session participant");
+        }
+        
+        List<UUID> taskIds = session.getTaskIds();
+        log.info("Retrieved {} tasks for session {}", taskIds != null ? taskIds.size() : 0, sessionId);
+        
+        return taskIds != null ? new ArrayList<>(taskIds) : new ArrayList<>();
+    }
 
 
     //Helper methods
@@ -582,23 +781,12 @@ public class SessionServiceImpl implements SessionService {
     
     // Session field update helpers
     private void updateSessionFields(Session session, UpdateSessionRequestDTO request) {
-        updateIfNotNull(request.getSessionName(), session::setSessionName);
-        updateIfNotNull(request.getDescription(), session::setDescription);
-        updateIfNotNull(request.getLongBreakMinutes(), session::setLongBreakMinutes);
-        updateIfNotNull(request.getShortBreakMinutes(), session::setShortBreakMinutes);
+        // Use MapStruct for automatic mapping of non-null values
+        sessionMapper.updateSessionFromRequest(request, session);
         
-        if (request.getWorkDurationMinutes() != null) {
-            session.setWorkDurationMinutes(request.getWorkDurationMinutes());
-            // Update current phase duration if currently in WORK phase
-            if (session.getCurrentType() == SessionType.WORK) {
-                session.setCurrentDurationMinutes(request.getWorkDurationMinutes());
-            }
-        }
-    }
-    
-    private <T> void updateIfNotNull(T value, Consumer<T> setter) {
-        if (value != null) {
-            setter.accept(value);
+        // Handle special case: Update current phase duration if currently in WORK phase
+        if (request.getWorkDurationMinutes() != null && session.getCurrentType() == SessionType.WORK) {
+            session.setCurrentDurationMinutes(request.getWorkDurationMinutes());
         }
     }
     
@@ -636,5 +824,71 @@ public class SessionServiceImpl implements SessionService {
         participant.setWorkSessionsParticipated(0);
         return participant;
     }
+
+    //Time calculations
+    private Duration calculateTotalElapsedTime(Session session){
+        if(session.getStartTime()==null){
+            return Duration.ZERO;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = session.getStartTime();
+        return durationTime(startTime, now);
+    }
+    private Duration calculateTimeRemainingInPhase(Session session){
+        LocalDateTime phaseStartTime = session.getCurrentPhaseStartTime();
+        int phaseDurationMinutes = session.getCurrentDurationMinutes();
+
+        Duration elapsedInPhase = durationTime(phaseStartTime, LocalDateTime.now());
+
+        Duration totalPhaseTime = Duration.ofMinutes(phaseDurationMinutes);
+        Duration remaining = totalPhaseTime.minus(elapsedInPhase);
+
+        return remaining.isNegative() ? Duration.ZERO : remaining;
+
+    }
+    private boolean isPhaseOvertime(Session session){
+        Duration remaining = calculateTimeRemainingInPhase(session);
+        return remaining.equals(Duration.ZERO);
+    }
+
+
+    // Task progress helpers
+    private int calculateCompletedTasksCount(List<UUID> taskIds) {
+        if (taskIds == null || taskIds.isEmpty()) {
+            return 0;
+        }
+        
+        // TODO: Replace with gRPC call to task service when task service is complete
+        // Example: return taskServiceClient.getCompletedTaskCount(taskIds);
+        // For now, we can't determine completion status from session service
+        log.debug("Task completion count requested for {} tasks - returning 0 until task service integration", taskIds.size());
+        
+        return 0; // Will be replaced with actual gRPC call
+    }
+    
+    private boolean isWaitingForBreakSelection(Session session) {
+        if (session == null || session.getCurrentType() == null) {
+            return false;
+        }
+        
+        // User should select break type when:
+        // 1. Currently in a WORK phase
+        // 2. Work phase time has expired (overtime)
+        boolean isWorkPhase = session.getCurrentType() == SessionType.WORK;
+        boolean isOvertime = isPhaseOvertime(session);
+        
+        return isWorkPhase && isOvertime;
+    }
+
+    // Participant helpers
+    private List<UUID> getActiveParticipantIds(UUID sessionId) {
+        if (sessionId == null) {
+            return new ArrayList<>();
+        }
+        
+        // Reuse existing repository method - already implemented and tested
+        return sessionParticipantRepository.findActiveParticipantUserIds(sessionId);
+    }
+
 
 }
